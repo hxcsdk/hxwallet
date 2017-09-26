@@ -17,7 +17,6 @@ import (
 	"github.com/hybridnetwork/hxd/wire"
 	dcrutil "github.com/hybridnetwork/hxutil"
 	"github.com/hybridnetwork/hxwallet/apperrors"
-	walletchain "github.com/hybridnetwork/hxwallet/chain"
 	"github.com/hybridnetwork/hxwallet/walletdb"
 )
 
