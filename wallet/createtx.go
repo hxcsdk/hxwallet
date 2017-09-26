@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"time"
 
+
 	"github.com/hybridnetwork/hxd/blockchain"
 	"github.com/hybridnetwork/hxd/blockchain/stake"
 	"github.com/hybridnetwork/hxd/chaincfg"
@@ -20,9 +21,9 @@ import (
 	"github.com/hybridnetwork/hxd/mempool"
 	"github.com/hybridnetwork/hxd/txscript"
 	"github.com/hybridnetwork/hxd/wire"
+    dcrrpcclient "github.com/hybridnetwork/hxrpcclient"
 	dcrutil "github.com/hybridnetwork/hxutil"
 	"github.com/hybridnetwork/hxwallet/apperrors"
-	"github.com/hybridnetwork/hxwallet/chain"
 	"github.com/hybridnetwork/hxwallet/wallet/internal/txsizes"
 	"github.com/hybridnetwork/hxwallet/wallet/txauthor"
 	"github.com/hybridnetwork/hxwallet/wallet/txrules"
@@ -390,8 +391,8 @@ func (w *Wallet) txToOutputs(outputs []*wire.TxOut, account uint32, minconf int3
 // Decred: This func also sends the transaction, and if successful, inserts it
 // into the database, rather than delegating this work to the caller as
 // btcwallet does.
-func (w *Wallet) txToOutputsInternal(outputs []*wire.TxOut, account uint32, minconf int32, chainClient *chain.RPCClient,
-	randomizeChangeIdx bool, txFee dcrutil.Amount) (*txauthor.AuthoredTx, error) {
+func (w *Wallet) txToOutputsInternal(outputs []*wire.TxOut, account uint32, minconf int32,
+	chainClient *dcrrpcclient.Client, randomizeChangeIdx bool, txFee dcrutil.Amount) (*txauthor.AuthoredTx, error) {
 
 	var atx *txauthor.AuthoredTx
 	var changeSourceUpdates []func(walletdb.ReadWriteTx) error
