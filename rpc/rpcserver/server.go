@@ -984,6 +984,59 @@ func (s *walletServer) GetTransactions(req *pb.GetTransactionsRequest,
 	return nil
 }
 
+func (s *walletServer) GetTickets(req *pb.GetTicketsRequest,
+	server pb.WalletService_GetTicketsServer) error {
+
+    chainClient, err := s.requireChainClient()
+	if err != nil {
+		return err
+	}
+
+	var startBlock, endBlock *wallet.BlockIdentifier
+	if req.StartingBlockHash != nil && req.StartingBlockHeight != 0 {
+		return status.Errorf(codes.InvalidArgument,
+			"starting block hash and height may not be specified simultaneously")
+	} else if req.StartingBlockHash != nil {
+		startBlockHash, err := chainhash.NewHash(req.StartingBlockHash)
+		if err != nil {
+			return status.Errorf(codes.InvalidArgument, "%s", err.Error())
+		}
+		startBlock = wallet.NewBlockIdentifierFromHash(startBlockHash)
+	} else if req.StartingBlockHeight != 0 {
+		startBlock = wallet.NewBlockIdentifierFromHeight(req.StartingBlockHeight)
+	}
+
+	if req.EndingBlockHash != nil && req.EndingBlockHeight != 0 {
+		return status.Errorf(codes.InvalidArgument,
+			"ending block hash and height may not be specified simultaneously")
+	} else if req.EndingBlockHash != nil {
+		endBlockHash, err := chainhash.NewHash(req.EndingBlockHash)
+		if err != nil {
+			return status.Errorf(codes.InvalidArgument, "%s", err.Error())
+		}
+		endBlock = wallet.NewBlockIdentifierFromHash(endBlockHash)
+	} else if req.EndingBlockHeight != 0 {
+		endBlock = wallet.NewBlockIdentifierFromHeight(req.EndingBlockHeight)
+	}
+
+	gt, err := s.wallet.GetTickets(server.Context(), chainClient, startBlock, endBlock)
+	if err != nil {
+		return translateError(err)
+	}
+	for i := range gt.Tickets {
+		if gt.Tickets[i] != nil {
+			resp := &pb.GetTicketsResponse{
+				Ticket: marshalTicketDetails(gt.Tickets[i]),
+			}
+			err = server.Send(resp)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (s *walletServer) ChangePassphrase(ctx context.Context, req *pb.ChangePassphraseRequest) (
 	*pb.ChangePassphraseResponse, error) {
 
@@ -1467,6 +1520,35 @@ func marshalTransactionDetailsSlice(v []wallet.TransactionSummary) []*pb.Transac
 		txs[i] = marshalTransactionDetails(&v[i])
 	}
 	return txs
+}
+
+func marshalTicketDetails(ticket *wallet.TicketSummary) *pb.GetTicketsResponse_TicketDetails {
+	var ticketStatus = pb.GetTicketsResponse_TicketDetails_LIVE
+	switch ticket.Status {
+	case wallet.TicketStatusExpired:
+		ticketStatus = pb.GetTicketsResponse_TicketDetails_EXPIRED
+	case wallet.TicketStatusImmature:
+		ticketStatus = pb.GetTicketsResponse_TicketDetails_IMMATURE
+	case wallet.TicketStatusVoted:
+		ticketStatus = pb.GetTicketsResponse_TicketDetails_VOTED
+	case wallet.TicketStatusRevoked:
+		ticketStatus = pb.GetTicketsResponse_TicketDetails_REVOKED
+	case wallet.TicketStatusUnmined:
+		ticketStatus = pb.GetTicketsResponse_TicketDetails_UNMINED
+	case wallet.TicketStatusMissed:
+		ticketStatus = pb.GetTicketsResponse_TicketDetails_MISSED
+	case wallet.TicketStatusUnknown:
+		ticketStatus = pb.GetTicketsResponse_TicketDetails_UNKNOWN
+	}
+	spender := &pb.TransactionDetails{}
+	if ticket.Spender != nil {
+		spender = marshalTransactionDetails(ticket.Spender)
+	}
+	return &pb.GetTicketsResponse_TicketDetails{
+		Ticket:       marshalTransactionDetails(ticket.Ticket),
+		Spender:      spender,
+		TicketStatus: ticketStatus,
+	}
 }
 
 func marshalBlock(v *wallet.Block) *pb.BlockDetails {
