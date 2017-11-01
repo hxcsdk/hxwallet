@@ -63,6 +63,19 @@ func walletMain() error {
 	// Show version at startup.
 	log.Infof("Version %s (Go version %s)", version(), runtime.Version())
 
+	// Read IPC messages from the read end of a pipe created and passed by the
+	// parent process, if any.  When this pipe is closed, shutdown is
+	// initialized.
+	if cfg.PipeRx != nil {
+		go serviceControlPipeRx(uintptr(*cfg.PipeRx))
+	}
+	if cfg.PipeTx != nil {
+		go serviceControlPipeTx(uintptr(*cfg.PipeTx))
+	} else {
+		go drainOutgoingPipeMessages()
+	}
+
+	// Run the pprof profiler if enabled.
 	if len(cfg.Profile) > 0 {
 		profileRedirect := http.RedirectHandler("/debug/pprof", http.StatusSeeOther)
 		http.Handle("/", profileRedirect)
