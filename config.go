@@ -830,7 +830,8 @@ func loadConfig() (*config, []string, error) {
 		return loadConfigError(err)
 	}
 
-	// Both RPC servers may not listen on the same interface/port.
+	// Both RPC servers may not listen on the same interface/port, with the
+	// exception of listeners using port 0.
 	if len(cfg.LegacyRPCListeners) > 0 && len(cfg.GRPCListeners) > 0 {
 		seenAddresses := make(map[string]struct{}, len(cfg.LegacyRPCListeners))
 		for _, addr := range cfg.LegacyRPCListeners {
@@ -838,7 +839,7 @@ func loadConfig() (*config, []string, error) {
 		}
 		for _, addr := range cfg.GRPCListeners {
 			_, seen := seenAddresses[addr]
-			if seen {
+			if seen && !strings.HasSuffix(addr, ":0") {
 				err := fmt.Errorf("Address `%s` may not be "+
 					"used as a listener address for both "+
 					"RPC servers", addr)
