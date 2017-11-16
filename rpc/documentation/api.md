@@ -384,6 +384,7 @@ The service provides the following methods:
 - [`RevokeTickets`](#revoketickets)
 - [`LoadActiveDataFilters`](#loadactivedatafilters)
 - [`SignMessage`](#signmessage)
+- [`ValidateAddress`](#validateaddress)
 - [`TransactionNotifications`](#transactionnotifications)
 - [`AccountNotifications`](#accountnotifications)
 - [`ConfirmationNotifications`](#confirmationnotifications)
@@ -522,7 +523,7 @@ and unspendable immature coinbase balances.
 
 - `int64 voting_authority`: The total value of all tickets that the account has voting
   authority over.  
-  
+
 - `int64 unconfirmed`: The total value of all unconfirmed transactions with
    with reference to the minimum number of confirmations for a transaction
    (minconf). If minconf is 0 unconfirmed will be 0, otherwise unconfirmed
@@ -1464,6 +1465,36 @@ of an address.
 **Stability:** Unstable: this method may require API changes to support
 signature algorithms other than secp256k1.
 
+___
+#### `ValidateAddress`
+
+The `ValidateAddress` method verifies if an address is valid.
+
+**Request:** `ValidateAddressRequest`
+
+- `string address`: The address to be validated.
+
+**Response:** `ValidateAddressResponse`
+
+- `bool is_valid`: True if valid, false if not.
+
+- `bool is_mine`: True if the address is an address of the querying wallet, false if not.
+
+- `uint32 account_number`:  The account number of the wallet.
+
+- `string pub_key_addr`: The public key address.
+
+- `bytes pub_key`: The serialized public key.
+
+- `bool is_script`: True if the address pays to a script.
+
+- `repeated string pk_script_addrs`: the address(es) being paid to by the redeem script.
+
+- `ScriptType script_type`: The script type.
+
+- `bytes pay_to_addr_script`: The redeem script.
+
+- `uint32 sigs_required`: The number of signatures required.
 ___
 
 #### `TransactionNotifications`
