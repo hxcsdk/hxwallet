@@ -1,12 +1,12 @@
-hash: 8821a10afa7fa0a739161963d37154c7ed31841dc915a29978f2d27885acffbc
-updated: 2017-08-15T18:20:35.2879746-04:00
+hash: ff5420d1cf034fadd34a014845d8f45509872a9e38ca283cbfe83d9b2eec0e69
+updated: 2018-02-09T18:07:25.673359943-08:00
 imports:
 - name: github.com/agl/ed25519
   version: 278e1ec8e8a6e017cd07577924d6766039146ced
   subpackages:
   - edwards25519
 - name: github.com/boltdb/bolt
-  version: 583e8937c61f1af6513608ccc75c97b6abdf4ff9
+  version: 2f1ce7a837dcb8da3ec595b1dac9d0632f0f99e8
 - name: github.com/btcsuite/btclog
   version: 84c8d2346e9fc8c7b947e243b9c24e6df9fd206a
 - name: github.com/btcsuite/go-socks
@@ -15,12 +15,13 @@ imports:
   - socks
 - name: github.com/btcsuite/websocket
   version: 31079b6807923eb23992c421b114992b95131b55
+- name: github.com/dchest/blake256
+  version: dee3fe6eb0e98dc774a94fc231f85baf7c29d360
 - name: github.com/decred/bitset
   version: 484b833245d5f9046e2893a6bd2e54b1df3a53a4
-- name: github.com/decred/blake256
-  version: a840e32d7c31fe2e0218607334cb120a683951a4
 - name: github.com/decred/dcrd
-  version: 4c1f4f10382dc5ae0ce3fe13c69e588099a3e674
+  version: 17c383f3908d24bc4543d8d08a90fecda859e773
+  repo: file:///Users/jacobmcdorman/go/src/github.com/decred/dcrd
   subpackages:
   - blockchain
   - blockchain/internal/dbnamespace
@@ -32,6 +33,8 @@ imports:
   - chaincfg
   - chaincfg/chainec
   - chaincfg/chainhash
+  - crypto
+  - crypto/bliss
   - database
   - dcrec/edwards
   - dcrec/secp256k1
@@ -40,9 +43,11 @@ imports:
   - txscript
   - wire
 - name: github.com/decred/dcrrpcclient
-  version: abc326aeb97b299c7eb6b13b81353fc375e9b95d
+  version: d7f871a5a75d57c8fce17961bf287d16eb0e90ea
+  repo: file:///Users/jacobmcdorman/go/src/github.com/decred/dcrrpcclient
 - name: github.com/decred/dcrutil
-  version: 166211f0196be1d3be344ae64149e7c4f5ca36b0
+  version: 25e0047fb75923ab75ace09bbd50b4a0fd8b8785
+  repo: file:///Users/jacobmcdorman/go/src/github.com/decred/dcrutil
   subpackages:
   - base58
   - hdkeychain
@@ -50,15 +55,25 @@ imports:
   version: 5a0f697c9ed9d68fef0116532c6e05cfeae00e55
   subpackages:
   - proto
+  - ptypes
   - ptypes/any
+  - ptypes/duration
+  - ptypes/timestamp
 - name: github.com/jessevdk/go-flags
-  version: 48cf8722c3375517aba351d1f7577c40663a4407
+  version: 96dc06278ce32a0e9d957d590bb987c81ee66407
 - name: github.com/jrick/logrotate
   version: a93b200c26cbae3bb09dd0dc2c7c7fe1468a034a
   subpackages:
   - rotator
+- name: github.com/LoCCS/bliss
+  version: f3305c265fccfe3d0ce2f9677fa902f9679c58a4
+  subpackages:
+  - huffman
+  - params
+  - poly
+  - sampler
 - name: golang.org/x/crypto
-  version: b176d7def5d71bdd214203491f89843ed217f420
+  version: 5119cf507ed5294cc409c092980c7497ee5d6fd2
   subpackages:
   - nacl/secretbox
   - pbkdf2
@@ -66,6 +81,7 @@ imports:
   - ripemd160
   - salsa20/salsa
   - scrypt
+  - sha3
   - ssh/terminal
 - name: golang.org/x/net
   version: 1c05540f6879653db88113bc4a2b70aec4bd491f
@@ -94,28 +110,36 @@ imports:
   subpackages:
   - googleapis/rpc/status
 - name: google.golang.org/grpc
-  version: d8960bd63c6743defa6d54926e5edfa8e4a28e43
+  version: 6b51017f791ae1cfbec89c52efdf444b13b550ef
   subpackages:
+  - balancer
+  - balancer/base
+  - balancer/roundrobin
   - codes
+  - connectivity
   - credentials
-  - grpclb/grpc_lb_v1
+  - encoding
+  - grpclb/grpc_lb_v1/messages
   - grpclog
   - internal
   - keepalive
   - metadata
   - naming
   - peer
+  - resolver
+  - resolver/dns
+  - resolver/passthrough
   - stats
   - status
   - tap
   - transport
 testImports:
 - name: github.com/davecgh/go-spew
-  version: 346938d642f2ec3594ed81d874461961cd0faa76
+  version: 04cdfd42973bb9c8589fd6a731800cf222fde1a9
   subpackages:
   - spew
 - name: github.com/pmezard/go-difflib
-  version: 792786c7400a136282c1664665ae0a8db921c6c2
+  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
   subpackages:
   - difflib
 - name: github.com/stretchr/testify

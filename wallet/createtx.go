@@ -232,7 +232,7 @@ func (w *Wallet) NewUnsignedTransaction(outputs []*wire.TxOut, relayFeePerKb dcr
 
 		var err error
 		authoredTx, err = txauthor.NewUnsignedTransaction(outputs, relayFeePerKb,
-			inputSource, changeSource)
+			inputSource, changeSource, udb.AcctypeEc)
 		return err
 	})
 	if err != nil {
@@ -393,15 +393,25 @@ func (w *Wallet) txToOutputsInternal(outputs []*wire.TxOut, account uint32, minc
 		addrmgrNs := dbtx.ReadBucket(waddrmgrNamespaceKey)
 		txmgrNs := dbtx.ReadBucket(wtxmgrNamespaceKey)
 
+		// Get account type
+		accprop, err := w.Manager.AccountProperties(addrmgrNs, account)
+		if err != nil {
+			return err
+		}
+		accType := accprop.AccountType
+		if accType != udb.AcctypeEc && accType != udb.AcctypeBliss {
+			return errors.New("unsupport type!!")
+		}
+
 		// Create the unsigned transaction.
 		_, tipHeight := w.TxStore.MainChainTip(txmgrNs)
 		inputSource := w.TxStore.MakeInputSource(txmgrNs, addrmgrNs, account,
 			minconf, tipHeight)
 		persist := w.deferPersistReturnedChild(&changeSourceUpdates)
 		changeSource := w.changeSource(persist, account)
-		var err error
+
 		atx, err = txauthor.NewUnsignedTransaction(outputs, txFee,
-			inputSource.SelectInputs, changeSource)
+			inputSource.SelectInputs, changeSource, accType)
 		if err != nil {
 			return err
 		}
@@ -1877,7 +1887,7 @@ func createUnsignedRevocation(ticketHash *chainhash.Hash, ticketPurchase *wire.M
 	// Revocations must pay a fee but do so by decreasing one of the output
 	// values instead of increasing the input value and using a change output.
 	// Calculate the estimated signed serialize size.
-	sizeEstimate := txsizes.EstimateSerializeSize(1, revocation.TxOut, false)
+	sizeEstimate := txsizes.EstimateSerializeSize(1, revocation.TxOut, false, udb.AcctypeEc)
 	feeEstimate := txrules.FeeForSerializeSize(feePerKB, sizeEstimate)
 
 	// Reduce the output value of one of the outputs to accomodate for the relay

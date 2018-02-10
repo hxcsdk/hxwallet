@@ -124,37 +124,31 @@ func walletMain() error {
 			}
 		}
 
+		fmt.Println(cfg.Pass)
+		if cfg.Pass == "" {
+			os.Stdout.Sync()
+			for {
+				reader := bufio.NewReader(os.Stdin)
+				passphrase, err = prompt.PassPrompt(reader, "Enter priv wallet passphrase", false)
+				if err != nil {
+					fmt.Println("Failed to input password. Please try again.")
+					continue
+				}
+				break
+			}
+		} else {
+			passphrase = []byte(cfg.Pass)
+		}
+
 		// Load the wallet database.  It must have been created already
 		// or this will return an appropriate error.
-		w, err := loader.OpenExistingWallet(walletPass)
+		w, err := loader.OpenExistingWallet(walletPass, passphrase)
 		if err != nil {
 			log.Errorf("Open failed: %v", err)
 			return err
 		}
+		w.SetInitiallyUnlocked(true)
 
-		// TODO(jrick): I think that this prompt should be removed
-		// entirely instead of enabling it when --noinitialload is
-		// unset.  It can be replaced with an RPC request (either
-		// providing the private passphrase as a parameter, or require
-		// unlocking the wallet first) to trigger a full accounts
-		// rescan.
-		//
-		// Until then, since --noinitialload users are expecting to use
-		// the wallet only over RPC, disable this feature for them.
-		if !cfg.NoInitialLoad {
-			if cfg.Pass != "" {
-				passphrase = []byte(cfg.Pass)
-				w.SetInitiallyUnlocked(true)
-				var unlockAfter <-chan time.Time
-				err = w.Unlock(passphrase, unlockAfter)
-				if err != nil {
-					log.Errorf("Incorrect passphrase in pass config setting.")
-					return err
-				}
-			} else {
-				passphrase = startPromptPass(w)
-			}
-		}
 	}
 
 	// Create and start HTTP server to serve wallet client connections.
@@ -362,7 +356,7 @@ func rpcClientConnectLoop(passphrase []byte, legacyRPCServer *legacyrpc.Server, 
 			// does not require stopping and restarting everything.
 			loadedWallet.Stop()
 			loadedWallet.WaitForShutdown()
-			loadedWallet.Start()
+			loadedWallet.ReconnectStart()
 		}
 	}
 }

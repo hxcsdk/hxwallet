@@ -338,7 +338,7 @@ func (s *walletServer) NextAccount(ctx context.Context, req *pb.NextAccountReque
 		return nil, translateError(err)
 	}
 
-	account, err := s.wallet.NextAccount(req.AccountName)
+	account, err := s.wallet.NextAccount(req.AccountName, req.AccountType)
 	if err != nil {
 		return nil, translateError(err)
 	}
@@ -1519,7 +1519,7 @@ func (s *loaderServer) OpenWallet(ctx context.Context, req *pb.OpenWalletRequest
 		pubPassphrase = []byte(wallet.InsecurePubPassphrase)
 	}
 
-	_, err := s.loader.OpenExistingWallet(pubPassphrase)
+	_, err := s.loader.OpenExistingWallet(pubPassphrase, nil)
 	if err != nil {
 		return nil, translateError(err)
 	}

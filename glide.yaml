@@ -7,6 +7,7 @@ import:
 - package: github.com/decred/bitset
   version: master
 - package: github.com/decred/dcrd
+  repo: file:///Users/jacobmcdorman/go/src/github.com/decred/dcrd
   subpackages:
   - blockchain
   - blockchain/stake
@@ -17,8 +18,9 @@ import:
   - txscript
   - wire
 - package: github.com/decred/dcrrpcclient
+  repo: file:///Users/jacobmcdorman/go/src/github.com/decred/dcrrpcclient
 - package: github.com/decred/dcrutil
-  version: master
+  repo: file:///Users/jacobmcdorman/go/src/github.com/decred/dcrutil
   subpackages:
   - hdkeychain
 - package: github.com/golang/protobuf
@@ -48,3 +50,5 @@ import:
   version: master
   subpackages:
   - rotator
+- package: github.com/LoCCS/bliss
+- package: github.com/dchest/blake256

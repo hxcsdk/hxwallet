@@ -166,13 +166,15 @@ func (a *managedAddress) ExportPubKey() string {
 func newManagedAddressWithoutPrivKey(m *Manager, account uint32, pubKey chainec.PublicKey, compressed bool) (*managedAddress, error) {
 	// Create a pay-to-pubkey-hash address from the public key.
 	var pubKeyHash []byte
-	if compressed {
-		pubKeyHash = dcrutil.Hash160(pubKey.SerializeCompressed())
+	if compressed && pubKey.GetType() == chainec.ECTypeSecp256k1 {
+	   pubKeyHash = dcrutil.Hash160(pubKey.SerializeCompressed())
+	} else if pubKey.GetType() == chainec.ECTypeSecp256k1 {
+	   pubKeyHash = dcrutil.Hash160(pubKey.SerializeUncompressed())
 	} else {
-		pubKeyHash = dcrutil.Hash160(pubKey.SerializeUncompressed())
+		pubKeyHash = dcrutil.Hash160(pubKey.Serialize())
 	}
 	address, err := dcrutil.NewAddressPubKeyHash(pubKeyHash, m.chainParams,
-		chainec.ECTypeSecp256k1)
+		pubKey.GetType())
 	if err != nil {
 		return nil, err
 	}
