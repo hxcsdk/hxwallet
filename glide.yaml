@@ -7,7 +7,8 @@ import:
 - package: github.com/decred/bitset
   version: master
 - package: github.com/decred/dcrd
-  repo: file:///Users/jacobmcdorman/go/src/github.com/decred/dcrd
+  repo: git@github.com/hybridnetwork/hxd/hxd
+  version: post-quataum
   subpackages:
   - blockchain
   - blockchain/stake
@@ -18,9 +19,11 @@ import:
   - txscript
   - wire
 - package: github.com/decred/dcrrpcclient
-  repo: file:///Users/jacobmcdorman/go/src/github.com/decred/dcrrpcclient
+  repo: git@github.com/hybridnetwork/hxd/hxrpcclient
+  version: post-quataum
 - package: github.com/decred/dcrutil
-  repo: file:///Users/jacobmcdorman/go/src/github.com/decred/dcrutil
+  repo: git@github.com/hybridnetwork/hxd/hxutil
+  version: post-quataum
   subpackages:
   - hdkeychain
 - package: github.com/golang/protobuf
