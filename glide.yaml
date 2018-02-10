@@ -7,7 +7,7 @@ import:
 - package: github.com/decred/bitset
   version: master
 - package: github.com/decred/dcrd
-  repo: git@github.com/hybridnetwork/hxd/hxd
+  repo: git@github.com:hybridnetwork/hxd
   version: post-quataum
   subpackages:
   - blockchain
@@ -19,10 +19,10 @@ import:
   - txscript
   - wire
 - package: github.com/decred/dcrrpcclient
-  repo: git@github.com/hybridnetwork/hxd/hxrpcclient
+  repo: git@github.com:hybridnetwork/hxrpcclient
   version: post-quataum
 - package: github.com/decred/dcrutil
-  repo: git@github.com/hybridnetwork/hxd/hxutil
+  repo: git@github.com:hybridnetwork/hxutil
   version: post-quataum
   subpackages:
   - hdkeychain
