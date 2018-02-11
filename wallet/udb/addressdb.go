@@ -1224,7 +1224,7 @@ func fetchAddrAccount(ns walletdb.ReadBucket, addressID []byte) (uint32, error) 
 
 // forEachAccountAddress calls the given function with each address of
 // the given account stored in the manager, breaking early on error.
-func forEachAccountAddress(ns walletdb.ReadBucket, account uint32, fn func(rowInterface interface{}) error) (uint32, error) {
+func forEachAccountAddress(ns walletdb.ReadBucket, account uint32, fn func(rowInterface interface{}) error) (uint8, error) {
 	bucket := ns.NestedReadBucket(addrAcctIdxBucketName).
 		NestedReadBucket(uint32ToBytes(account))
 	// if index bucket is missing the account, there hasn't been any address
