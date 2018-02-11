@@ -771,7 +771,14 @@ func (m *Manager) importedAddressRowToManaged(row *dbImportedAddressRow) (Manage
 		return nil, managerError(apperrors.ErrCrypto, str, err)
 	}
 
-	pubKey, err := chainec.Secp256k1.ParsePubKey(pubBytes)
+	var pubKey chainec.PublicKey
+
+	if len(pubBytes) == 33 || len(pubBytes) == 65 {
+		pubKey, err = chainec.Secp256k1.ParsePubKey(pubBytes)
+	} else {
+		pubKey, err = bliss.Bliss.ParsePubKey(pubBytes)
+	}
+
 	if err != nil {
 		str := "invalid public key for imported address"
 		return nil, managerError(apperrors.ErrCrypto, str, err)
@@ -865,6 +872,12 @@ func (m *Manager) AddrAccount(ns walletdb.ReadBucket, address dcrutil.Address) (
 		return 0, maybeConvertDbError(err)
 	}
 	return account, nil
+}
+
+// ExistsAddress returns whether or not the address id exists in the database.
+func (m *Manager) ExistsAddress(ns walletdb.ReadBucket, address dcrutil.Address) bool {
+	address = normalizeAddress(address)
+	return existsAddress(ns, address.ScriptAddress())
 }
 
 // ChangePassphrase changes either the public or private passphrase to the
@@ -1187,11 +1200,23 @@ func (m *Manager) ImportPrivateKey(ns walletdb.ReadWriteBucket, wif *dcrutil.WIF
 	}
 
 	// Create a new managed address based on the imported address.
-	managedAddr, err := newManagedAddressWithoutPrivKey(m, ImportedAddrAccount,
-		chainec.Secp256k1.NewPublicKey(wif.PrivKey.Public()), true)
-	if err != nil {
-		return nil, err
+	var managedAddr *managedAddress
+	// Save the new imported address to the db and update start block (if
+	// needed) in a single transaction.
+	if wif.AlgorithmType != bliss.BSTypeBliss {
+		managedAddr, err = newManagedAddressWithoutPrivKey(m, ImportedAddrAccount,
+			chainec.Secp256k1.NewPublicKey(wif.PrivKey.Public()), true)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		managedAddr, err = newManagedAddressWithoutPrivKey(m, ImportedAddrAccount,
+			wif.PrivKey.(bliss.PrivateKey).PublicKey(), true)
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	managedAddr.imported = true
 	return managedAddr, nil
 }

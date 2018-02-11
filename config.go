@@ -153,6 +153,8 @@ type config struct {
 	// Deprecated options
 	DataDir      *cfgutil.ExplicitString `short:"b" long:"datadir" default-mask:"-" description:"DEPRECATED -- use appdata instead"`
 	PruneTickets bool                    `long:"prunetickets" description:"DEPRECATED -- old tickets are always pruned"`
+
+	createPass string
 }
 
 type ticketBuyerOptions struct {
