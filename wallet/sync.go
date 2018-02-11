@@ -10,11 +10,11 @@ import (
 	"sync"
 
 	"github.com/decred/bitset"
+	"github.com/decred/dcrutil"
 	"github.com/decred/dcrutil/hdkeychain"
 	"github.com/decred/dcrwallet/chain"
 	"github.com/decred/dcrwallet/wallet/udb"
 	"github.com/decred/dcrwallet/walletdb"
-	"github.com/decred/dcrutil"
 )
 
 const MaxAccountForTestNet = 16
@@ -29,7 +29,7 @@ type result struct {
 func (w *Wallet) findLastUsedAccount(client *chain.RPCClient, coinTypeXpriv *hdkeychain.ExtendedKey) (uint32, uint32, map[uint32]result, error) {
 	const scanLen = 100
 
-	var lastRecorded  uint32
+	var lastRecorded uint32
 	//var err error
 	err := walletdb.Update(w.db, func(tx walletdb.ReadWriteTx) error {
 		ns := tx.ReadWriteBucket(waddrmgrNamespaceKey)
@@ -42,7 +42,7 @@ func (w *Wallet) findLastUsedAccount(client *chain.RPCClient, coinTypeXpriv *hdk
 	})
 
 	if err != nil {
-		return  0, 0, nil, err
+		return 0, 0, nil, err
 	}
 
 	var (
@@ -50,7 +50,7 @@ func (w *Wallet) findLastUsedAccount(client *chain.RPCClient, coinTypeXpriv *hdk
 		lo, hi   uint32 = lastRecorded, hdkeychain.HardenedKeyStart / scanLen
 	)
 
-	requestAccount := make(map[uint32] result, 0)
+	requestAccount := make(map[uint32]result, 0)
 
 Bsearch:
 	for lo <= hi {
@@ -65,7 +65,6 @@ Bsearch:
 			if account >= hdkeychain.HardenedKeyStart {
 				continue
 			}
-			
 
 			wgs.Add(2)
 			usedType := 0
@@ -103,12 +102,12 @@ Bsearch:
 			}
 		}
 		if mid == lastRecorded {
- 			break
- 		}
+			break
+		}
 		hi = mid - 1
 	}
 
-	for i := lastRecorded + 1 ; i <= lastUsed ; i ++ {
+	for i := lastRecorded + 1; i <= lastUsed; i++ {
 		var wg sync.WaitGroup
 		wg.Add(2)
 
@@ -144,9 +143,8 @@ Bsearch:
 	return lastRecorded, lastUsed, requestAccount, nil
 }
 
-
 func (w *Wallet) findLastUsedAccountForTest(client *chain.RPCClient, coinTypeXpriv *hdkeychain.ExtendedKey) (uint32, uint32, map[uint32]result, bool, error) {
-	var lastRecorded  uint32
+	var lastRecorded uint32
 	var accountinfo *udb.AccountProperties
 	var havebliss bool
 	err := walletdb.Update(w.db, func(tx walletdb.ReadWriteTx) error {
@@ -156,7 +154,7 @@ func (w *Wallet) findLastUsedAccountForTest(client *chain.RPCClient, coinTypeXpr
 		if err != nil {
 			return err
 		}
-		for i := uint32(0); i <= lastRecorded ; i++ {
+		for i := uint32(0); i <= lastRecorded; i++ {
 			accountinfo, err = w.Manager.AccountProperties(ns, i)
 			if err != nil {
 				return err
@@ -166,18 +164,17 @@ func (w *Wallet) findLastUsedAccountForTest(client *chain.RPCClient, coinTypeXpr
 			}
 		}
 
-
 		return nil
 	})
 	if err != nil {
-		return  0, 0, nil, false, err
+		return 0, 0, nil, false, err
 	}
 	var (
 		lastUsed uint32
 		lo, hi   uint32 = lastRecorded, MaxAccountForTestNet
 	)
 
-	requestAccount := make(map[uint32] result, 0)
+	requestAccount := make(map[uint32]result, 0)
 
 Bsearch:
 	for lo <= hi {
@@ -202,7 +199,7 @@ Bsearch:
 				usedType = 2
 			}
 			wgs.Done()
-			}()
+		}()
 		wgs.Wait()
 		if usedType == 0 {
 			r = result{false, account, udb.AcctypeEc, nil}
@@ -222,7 +219,7 @@ Bsearch:
 		hi = mid - 1
 	}
 
-	for i := lastRecorded + 1 ; i <= lastUsed ; i ++ {
+	for i := lastRecorded + 1; i <= lastUsed; i++ {
 		var wg sync.WaitGroup
 		wg.Add(2)
 
@@ -258,21 +255,21 @@ Bsearch:
 	return lastRecorded, lastUsed, requestAccount, havebliss, nil
 }
 
-func (w *Wallet) newAcctAndUsed(client *chain.RPCClient, coinTypeXpriv *hdkeychain.ExtendedKey, account uint32, acctype uint8) (bool, error){
-	xpriv, err := coinTypeXpriv.SwitchChild(hdkeychain.HardenedKeyStart + account, acctype)
+func (w *Wallet) newAcctAndUsed(client *chain.RPCClient, coinTypeXpriv *hdkeychain.ExtendedKey, account uint32, acctype uint8) (bool, error) {
+	xpriv, err := coinTypeXpriv.SwitchChild(hdkeychain.HardenedKeyStart+account, acctype)
 	if err != nil {
 		return false, err
 	}
 	xpub, err := xpriv.Neuter()
 	if err != nil {
 		xpriv.Zero()
-		return  false, err
+		return false, err
 	}
 
 	used, err := w.accountUsed(client, xpub, xpriv)
 	xpriv.Zero()
 	if err != nil {
-		return  false, err
+		return false, err
 	}
 
 	return used, nil
@@ -389,7 +386,7 @@ Bsearch:
 	return lastUsed, nil
 }
 
-func (w *Wallet) FindactiveAddressesForBliss(account, branch, start, count uint32)([]dcrutil.Address, error){
+func (w *Wallet) FindactiveAddressesForBliss(account, branch, start, count uint32) ([]dcrutil.Address, error) {
 	addrs := make([]dcrutil.Address, count)
 	err := walletdb.Update(w.db, func(tx walletdb.ReadWriteTx) error {
 		var err error
@@ -448,7 +445,7 @@ func (w *Wallet) DiscoverActiveAddresses(chainClient *chain.RPCClient, discoverA
 				}
 				for acct := lastRecorded + 1; acct <= lastUsed; acct++ {
 					var err error
-					if acct == lastUsed  && !havebliss {
+					if acct == lastUsed && !havebliss {
 						acct, err = w.Manager.NewAccount(ns, fmt.Sprintf("postquantum"), udb.AcctypeBliss)
 						if err != nil {
 							return err
@@ -459,7 +456,7 @@ func (w *Wallet) DiscoverActiveAddresses(chainClient *chain.RPCClient, discoverA
 						}
 						err = udb.CreateBlissBucket(ns)
 					} else {
-						if requestAccounts[acct].acctype == udb.AcctypeBliss{
+						if requestAccounts[acct].acctype == udb.AcctypeBliss {
 							acct, err = w.Manager.NewAccount(ns, fmt.Sprintf("postquantum"), requestAccounts[acct].acctype)
 						} else {
 							acct, err = w.Manager.NewAccount(ns, fmt.Sprintf("account-%d", acct), requestAccounts[acct].acctype)
@@ -562,7 +559,7 @@ func (w *Wallet) DiscoverActiveAddresses(chainClient *chain.RPCClient, discoverA
 				var branchkey *hdkeychain.ExtendedKey
 				err := walletdb.View(w.db, func(tx walletdb.ReadTx) error {
 					var err error
-					if w.Manager.IsLocked(){
+					if w.Manager.IsLocked() {
 						return fmt.Errorf("wallet is locked")
 					}
 					branchkey, err = w.Manager.AccountBranchExtendedPubKey(tx, acct, branch)

@@ -11,9 +11,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/decred/dcrutil"
 	"github.com/decred/dcrwallet/apperrors"
 	"github.com/decred/dcrwallet/walletdb"
-	"github.com/decred/dcrutil"
 )
 
 var (
@@ -119,6 +119,7 @@ type dbImportedAddressRow struct {
 	dbAddressRow
 	encryptedPubKey  []byte
 	encryptedPrivKey []byte
+	algType          uint8
 }
 
 // dbImportedAddressRow houses additional information stored about a script
@@ -723,9 +724,9 @@ func fetchAccountInfo(ns walletdb.ReadBucket, account uint32, dbVersion uint32) 
 		return nil, err
 	}
 
-	if row.acctType == 0 || row.acctType == 1 || row.acctType == 2{
- 		return deserializeBIP0044AccountRow(accountID, row, dbVersion)
- 	}
+	if row.acctType == 0 || row.acctType == 1 || row.acctType == 2 {
+		return deserializeBIP0044AccountRow(accountID, row, dbVersion)
+	}
 
 	str := fmt.Sprintf("unsupported account type '%d'", row.acctType)
 	return nil, managerError(apperrors.ErrDatabase, str, nil)
@@ -957,6 +958,11 @@ func deserializeImportedAddress(row *dbAddressRow) (*dbImportedAddressRow, error
 	retRow.encryptedPrivKey = make([]byte, privLen)
 	copy(retRow.encryptedPrivKey, row.rawData[offset:offset+privLen])
 
+	if privLen == 72 {
+		retRow.algType = AcctypeEc
+	} else if privLen == 425 {
+		retRow.algType = AcctypeBliss
+	}
 	return &retRow, nil
 }
 
@@ -1075,7 +1081,7 @@ func fetchAddress(ns walletdb.ReadBucket, addressID []byte) (interface{}, error)
 	return fetchAddressByHash(ns, addrHash[:])
 }
 
-func fetchBlissAddress(ns walletdb.ReadBucket, account, branch, index uint32) ([]byte) {
+func fetchBlissAddress(ns walletdb.ReadBucket, account, branch, index uint32) []byte {
 	bucket := ns.NestedReadBucket(blissaddrIdxBucketName)
 	rawData := make([]byte, 12)
 	binary.LittleEndian.PutUint32(rawData[0:4], account)
@@ -1218,20 +1224,22 @@ func fetchAddrAccount(ns walletdb.ReadBucket, addressID []byte) (uint32, error) 
 
 // forEachAccountAddress calls the given function with each address of
 // the given account stored in the manager, breaking early on error.
-func forEachAccountAddress(ns walletdb.ReadBucket, account uint32, fn func(rowInterface interface{}) error) error {
+func forEachAccountAddress(ns walletdb.ReadBucket, account uint32, fn func(rowInterface interface{}) error) (uint32, error) {
 	bucket := ns.NestedReadBucket(addrAcctIdxBucketName).
 		NestedReadBucket(uint32ToBytes(account))
 	// if index bucket is missing the account, there hasn't been any address
 	// entries yet
 	if bucket == nil {
-		return nil
+		return 255, nil
 	}
 
+	var addrRow interface{}
 	err := bucket.ForEach(func(k, v []byte) error {
 		// Skip buckets.
 		if v == nil {
 			return nil
 		}
+		var err error
 		addrRow, err := fetchAddressByHash(ns, k)
 		if err != nil {
 			if merr, ok := err.(apperrors.E); ok {
@@ -1246,9 +1254,14 @@ func forEachAccountAddress(ns walletdb.ReadBucket, account uint32, fn func(rowIn
 		return fn(addrRow)
 	})
 	if err != nil {
-		return maybeConvertDbError(err)
+		return 255, maybeConvertDbError(err)
 	}
-	return nil
+
+	switch row := addrRow.(type) {
+	case *dbImportedAddressRow:
+		return row.algType, nil
+	}
+	return 255, nil
 }
 
 // forEachActiveAddress calls the given function with each active address
@@ -1625,9 +1638,8 @@ func upgradeManager(ns walletdb.ReadWriteBucket) error {
 
 func PutChainedBlissAddress(ns walletdb.ReadWriteBucket, addr *dcrutil.AddressPubKeyHash, account uint32,
 	status syncStatus, branch, index uint32) error {
-		return putChainedAddress(ns, addr, account, status, branch, index)
+	return putChainedAddress(ns, addr, account, status, branch, index)
 }
-
 
 func CreateBlissBucket(ns walletdb.ReadWriteBucket) error {
 	//_, err := ns.CreateBucketIfNotExists(blissaddrIdxBucketName)

@@ -1886,10 +1886,10 @@ func purchaseTicket(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 	// Set ticket address if specified.
 	var ticketAddr dcrutil.Address
 	if cmd.TicketAddress != nil {
-		if  bytes.Equal([]byte((*cmd.TicketAddress)[0:2]), []byte("Hb")) {
-			return nil, fmt.Errorf("not supported")
-		}
 		if *cmd.TicketAddress != "" {
+			if bytes.Equal([]byte((*cmd.TicketAddress)[0:2]), []byte("Hb")) {
+				return nil, fmt.Errorf("postquantum addresses not yet supported")
+			}
 			addr, err := decodeAddress(*cmd.TicketAddress, w.ChainParams())
 			if err != nil {
 				return nil, err
@@ -3005,7 +3005,7 @@ func validateAddress(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
-		if  bytes.Equal([]byte(result.Address[0:2]), []byte("Hb")) {
+		if bytes.Equal([]byte(result.Address[0:2]), []byte("Hb")) {
 			pubKeyAddr, err := dcrutil.NewAddressBlissPubKey(pubKeyBytes,
 				w.ChainParams())
 			if err != nil {
@@ -3019,7 +3019,7 @@ func validateAddress(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 				return nil, err
 			}
 			result.PubKeyAddr = pubKeyAddr.String()
- 		}
+		}
 
 	case udb.ManagedScriptAddress:
 		result.IsScript = true

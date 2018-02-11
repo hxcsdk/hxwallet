@@ -5,6 +5,8 @@
 package wallet
 
 import (
+	"fmt"
+
 	"github.com/decred/dcrd/chaincfg"
 	"github.com/decred/dcrd/txscript"
 	"github.com/decred/dcrutil"
@@ -13,7 +15,6 @@ import (
 	"github.com/decred/dcrwallet/wallet/txauthor"
 	"github.com/decred/dcrwallet/wallet/udb"
 	"github.com/decred/dcrwallet/walletdb"
-	"fmt"
 )
 
 // DefaultGapLimit is the default unused address gap limit defined by BIP0044.
@@ -222,20 +223,20 @@ func (w *Wallet) nextAddress(persist persistReturnedChildFunc, accountinfo *udb.
 						if err != nil {
 							return err
 						}
-						for i := uint32(1); i <= gapLimit; i++{
-							addrpriv, err := branchpriv.Child(alb.lastUsed+i+alb.cursor+gapLimit)
+						for i := uint32(1); i <= gapLimit; i++ {
+							addrpriv, err := branchpriv.Child(alb.lastUsed + i + alb.cursor + gapLimit)
 							if err != nil {
 								return err
 							}
 							addrpub, err := addrpriv.Neuter()
 							if err != nil {
-								return  err
+								return err
 							}
 							addr, err := addrpub.Address(w.chainParams, addrpriv.GetAlgType())
 							if err != nil {
-								return  err
+								return err
 							}
-							addrs = append(addrs,addr)
+							addrs = append(addrs, addr)
 							addrpriv.Zero()
 						}
 						branchpriv.Zero()
@@ -281,13 +282,13 @@ func (w *Wallet) nextAddress(persist persistReturnedChildFunc, accountinfo *udb.
 				if err != nil {
 					return err
 				}
-				addrpriv, err := branchpriv.Child(childIndex+gapLimit)
+				addrpriv, err := branchpriv.Child(childIndex + gapLimit)
 				if err != nil {
 					return err
 				}
 				addrpub, err := addrpriv.Neuter()
 				if err != nil {
-					return  err
+					return err
 				}
 				addr, err = addrpub.Address(w.chainParams, addrpriv.GetAlgType())
 				addrpriv.Zero()
@@ -320,7 +321,9 @@ func (w *Wallet) nextAddress(persist persistReturnedChildFunc, accountinfo *udb.
 			alb.cursor++
 			addresses := make([]dcrutil.Address, 0, 1)
 			addresses = append(addresses, addr)
-			err = chainClient.LoadTxFilter(false, addresses, nil)
+			if chainClient != nil {
+				err = chainClient.LoadTxFilter(false, addresses, nil)
+			}
 			if err != nil {
 				return nil, err
 			}
@@ -457,13 +460,13 @@ func (w *Wallet) watchFutureAddresses(dbtx walletdb.ReadTx) error {
 				return err
 			}
 		} else if xpubBranchExt.GetAlgType() == udb.AcctypeBliss {
-			addrsEx, err := w.Manager.LoadBlissAddrs(ns, account, udb.ExternalBranch, 0, DefaultGapLimit)	
+			addrsEx, err := w.Manager.LoadBlissAddrs(ns, account, udb.ExternalBranch, startExt, endExt-startExt)
 			if err != nil {
 				return err
 			}
-			addrsIn, err := w.Manager.LoadBlissAddrs(ns, account, udb.InternalBranch, 0, DefaultGapLimit)	
+			addrsIn, err := w.Manager.LoadBlissAddrs(ns, account, udb.InternalBranch, startInt, endInt-startInt)
 			if err != nil {
-	 			return err
+				return err
 			}
 			addrs = append(addrsEx, addrsIn[:]...)
 		}
@@ -501,14 +504,14 @@ func (w *Wallet) NewExternalAddress(account uint32, callOpts ...NextAddressCallO
 		ns := tx.ReadBucket(waddrmgrNamespaceKey)
 		accountinfo, err = w.Manager.AccountProperties(ns, account)
 		if err != nil {
-			return  err
+			return err
 		}
 		return err
 	})
 	if err != nil {
 		return nil, err
 	}
-	if w.Manager.IsLocked() && accountinfo.AccountType == udb.AcctypeBliss{
+	if w.Manager.IsLocked() && accountinfo.AccountType == udb.AcctypeBliss {
 		return nil, fmt.Errorf("wallet is locked")
 	}
 	return w.nextAddress(w.persistReturnedChild(nil), accountinfo, udb.ExternalBranch, callOpts...)
@@ -522,14 +525,14 @@ func (w *Wallet) NewInternalAddress(account uint32, callOpts ...NextAddressCallO
 		ns := tx.ReadBucket(waddrmgrNamespaceKey)
 		accountinfo, err = w.Manager.AccountProperties(ns, account)
 		if err != nil {
-			return  err
+			return err
 		}
 		return err
 	})
 	if err != nil {
 		return nil, err
 	}
-	if w.Manager.IsLocked() && accountinfo.AccountType == udb.AcctypeBliss{
+	if w.Manager.IsLocked() && accountinfo.AccountType == udb.AcctypeBliss {
 		return nil, fmt.Errorf("wallet is locked")
 	}
 	return w.nextAddress(w.persistReturnedChild(nil), accountinfo, udb.InternalBranch, callOpts...)
@@ -549,14 +552,14 @@ func (w *Wallet) newChangeAddress(persist persistReturnedChildFunc, account uint
 		ns := tx.ReadBucket(waddrmgrNamespaceKey)
 		accountinfo, err = w.Manager.AccountProperties(ns, account)
 		if err != nil {
-			return  err
+			return err
 		}
 		return err
 	})
 	if err != nil {
 		return nil, err
 	}
-	if w.Manager.IsLocked() && accountinfo.AccountType == udb.AcctypeBliss{
+	if w.Manager.IsLocked() && accountinfo.AccountType == udb.AcctypeBliss {
 		return nil, fmt.Errorf("wallet is locked")
 	}
 	return w.nextAddress(persist, accountinfo, udb.InternalBranch, WithGapPolicyWrap())
@@ -592,7 +595,7 @@ func (w *Wallet) BIP0044BranchNextIndexes(account uint32) (extChild, intChild ui
 func (w *Wallet) ExtendWatchedAddresses(account, branch, child uint32) error {
 	var (
 		branchXpub, branchXpriv *hdkeychain.ExtendedKey
-		lastUsed   uint32
+		lastUsed                uint32
 	)
 	err := walletdb.Update(w.db, func(tx walletdb.ReadWriteTx) error {
 		var err error
@@ -698,7 +701,7 @@ func (w *Wallet) AccountBranchAddressRange(account, branch, start, end uint32) (
 			var err error
 			branchXpriv, err = w.Manager.AccountBranchExtendedPrivKey(tx, account, branch)
 			if err != nil {
-				return  err
+				return err
 			}
 			return err
 		})
@@ -706,7 +709,7 @@ func (w *Wallet) AccountBranchAddressRange(account, branch, start, end uint32) (
 			return nil, err
 		}
 		//TODO
-		return  deriveBlissAddresses(branchXpriv, start+uint32(w.gapLimit), end-start, w.chainParams)
+		return deriveBlissAddresses(branchXpriv, start+uint32(w.gapLimit), end-start, w.chainParams)
 	}
 	return nil, fmt.Errorf("unknown pubkey type")
 }

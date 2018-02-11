@@ -203,7 +203,7 @@ func lastUsedAddressIndexUpgrade(tx walletdb.ReadWriteTx, publicPassphrase, priv
 				const str = "failed to derive internal branch extended private key"
 				return apperrors.E{ErrorCode: apperrors.ErrKeyChain, Description: str, Err: err}
 			}
- 		}
+		}
 
 		// Determine the last used internal and external address indexes.  The
 		// sentinel value ^uint32(0) means that there has been no usage at all.
@@ -262,7 +262,7 @@ func lastUsedAddressIndexUpgrade(tx walletdb.ReadWriteTx, publicPassphrase, priv
 					const str = "unexpected error deriving child key"
 					return apperrors.E{ErrorCode: apperrors.ErrKeyChain, Description: str, Err: err}
 				}
- 			}
+			}
 			if xpub.GetAlgType() == AcctypeBliss {
 				xprivChild, err = xprivIntBranch.Child(child)
 				if err == hdkeychain.ErrInvalidChild {
@@ -277,7 +277,7 @@ func lastUsedAddressIndexUpgrade(tx walletdb.ReadWriteTx, publicPassphrase, priv
 					const str = "unexpected error deriving child key"
 					return apperrors.E{ErrorCode: apperrors.ErrKeyChain, Description: str, Err: err}
 				}
- 			}
+			}
 			addr, _ := xpubChild.Address(&chaincfg.MainNetParams, xpubChild.GetAlgType())
 			if addressBucket.Get(addressKey(addr.Hash160()[:])) == nil {
 				break

@@ -167,9 +167,9 @@ func newManagedAddressWithoutPrivKey(m *Manager, account uint32, pubKey chainec.
 	// Create a pay-to-pubkey-hash address from the public key.
 	var pubKeyHash []byte
 	if compressed && pubKey.GetType() == chainec.ECTypeSecp256k1 {
-	   pubKeyHash = dcrutil.Hash160(pubKey.SerializeCompressed())
+		pubKeyHash = dcrutil.Hash160(pubKey.SerializeCompressed())
 	} else if pubKey.GetType() == chainec.ECTypeSecp256k1 {
-	   pubKeyHash = dcrutil.Hash160(pubKey.SerializeUncompressed())
+		pubKeyHash = dcrutil.Hash160(pubKey.SerializeUncompressed())
 	} else {
 		pubKeyHash = dcrutil.Hash160(pubKey.Serialize())
 	}

@@ -203,9 +203,8 @@ func newWallet(votingEnabled bool, addressReuse bool, ticketAddress dcrutil.Addr
 	var extKey, intKey *hdkeychain.ExtendedKey
 	err := w.Unlock(privpass, unlockAfter)
 	if err != nil {
-		return  nil, err
+		return nil, err
 	}
-
 
 	walletdb.View(w.db, func(tx walletdb.ReadTx) error {
 		ns := tx.ReadBucket(waddrmgrNamespaceKey)
@@ -576,10 +575,10 @@ func (w *Wallet) ReconnectStart() {
 	}
 	w.quitMu.Unlock()
 
- 	w.wg.Add(2)
- 	go w.txCreator()
- 	go w.walletLocker()
- }
+	w.wg.Add(2)
+	go w.txCreator()
+	go w.walletLocker()
+}
 
 // SynchronizeRPC associates the wallet with the consensus RPC client,
 // synchronizes the wallet with the latest changes to the blockchain, and
@@ -882,7 +881,7 @@ func (w *Wallet) loadActiveAddrs(dbtx walletdb.ReadTx, chainClient *chain.RPCCli
 			if err != nil {
 				return 0, err
 			}
- 		}
+		}
 		if err != nil {
 			return 0, err
 		}
@@ -912,7 +911,7 @@ func (w *Wallet) loadActiveAddrs(dbtx walletdb.ReadTx, chainClient *chain.RPCCli
 		if extKey.GetAlgType() == udb.AcctypeEc {
 			go loadBranchAddrs(extKey, extn, errs)
 			go loadBranchAddrs(intKey, intn, errs)
-		}else if extKey.GetAlgType() == udb.AcctypeBliss {
+		} else if extKey.GetAlgType() == udb.AcctypeBliss {
 			go loadBlissAddrs(props.AccountNumber, udb.ExternalBranch, extn, errs)
 			go loadBlissAddrs(props.AccountNumber, udb.InternalBranch, intn, errs)
 		}
@@ -1785,7 +1784,7 @@ func (w *Wallet) CurrentAddress(account uint32) (dcrutil.Address, error) {
 	defer w.addressBuffersMu.Unlock()
 	w.addressBuffersMu.Lock()
 
-	if w.Manager.IsLocked(){
+	if w.Manager.IsLocked() {
 		const str = "wallet not unlocked"
 		return nil, apperrors.E{ErrorCode: apperrors.ErrLocked, Description: str, Err: nil}
 	}
@@ -1818,7 +1817,7 @@ func (w *Wallet) CurrentAddress(account uint32) (dcrutil.Address, error) {
 			return nil, err
 		}
 		return blissaddr, nil
- 	}
+	}
 
 	return child.Address(w.chainParams, child.GetAlgType())
 }
@@ -2114,7 +2113,7 @@ func (w *Wallet) NextAccount(name string, actype uint8) (uint32, error) {
 		if err != nil {
 			return 0, err
 		}
- 	}
+	}
 	w.addressBuffersMu.Lock()
 	w.addressBuffers[account] = &bip0044AccountData{
 		albExternal: addressBuffer{branchXpub: extKey, lastUsed: ^uint32(0)},
@@ -2149,7 +2148,7 @@ func (w *Wallet) NextAccount(name string, actype uint8) (uint32, error) {
 						if err != nil {
 							return err
 						}
-						addrs = append(addrsExt,addrsInt[:]...)
+						addrs = append(addrsExt, addrsInt[:]...)
 						return nil
 					})
 					if err != nil {
@@ -2157,7 +2156,7 @@ func (w *Wallet) NextAccount(name string, actype uint8) (uint32, error) {
 						return
 					}
 					errs <- client.LoadTxFilter(false, addrs, nil)
- 				}
+				}
 			}()
 		}
 		for i := 0; i < cap(errs); i++ {
@@ -4000,7 +3999,7 @@ func decodeStakePoolColdExtKey(encStr string, params *chaincfg.Params) (map[stri
 		return nil, fmt.Errorf("extended public key is for wrong network")
 	}
 	if key.GetAlgType() != udb.AcctypeEc {
-		return  nil, fmt.Errorf("wrong key type for stakepool")
+		return nil, fmt.Errorf("wrong key type for stakepool")
 	}
 
 	// Parse the ending index and ensure it's valid.

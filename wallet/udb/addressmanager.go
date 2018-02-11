@@ -14,6 +14,7 @@ import (
 
 	"github.com/decred/dcrd/chaincfg"
 	"github.com/decred/dcrd/chaincfg/chainec"
+	"github.com/decred/dcrd/crypto/bliss"
 	"github.com/decred/dcrutil"
 	"github.com/decred/dcrutil/hdkeychain"
 	"github.com/decred/dcrwallet/apperrors"
@@ -46,9 +47,9 @@ const (
 	ImportedAddrAccountName = "imported"
 
 	// DefaultAccountNum is the number of the default account.
-	DefaultAccountNum = 0
+	DefaultAccountNum      = 0
 	DefaultBlissAccountNum = 1
-	BlissAccountName = "postquantum"
+	BlissAccountName       = "postquantum"
 
 	// defaultAccountName is the initial name of the default account.  Note
 	// that the default account may be renamed and is not a reserved name,
@@ -86,9 +87,9 @@ const (
 	// private passphrases.
 	saltSize = 32
 
-	AcctypeEc 		uint8 = 0
-	AcctypeBliss    uint8 = 1
-	AcctypeMSS      uint8 = 2
+	AcctypeEc    uint8 = 0
+	AcctypeBliss uint8 = 1
+	AcctypeMSS   uint8 = 2
 )
 
 var (
@@ -261,7 +262,8 @@ var newCryptoKey = defaultNewCryptoKey
 // Manager represents a concurrency safe crypto currency address manager and
 // key store.
 type Manager struct {
-	mtx sync.RWMutex
+	mtx  sync.RWMutex
+	mtx2 sync.RWMutex
 
 	// returnedSecretsMu is a read/write mutex that is held for reads when
 	// secrets (private keys and redeem scripts) are being used and held for
@@ -445,7 +447,6 @@ func deriveKey(acctInfo *accountInfo, branch, index uint32, private bool) (*hdke
 		return nil, fmt.Errorf("failed to derive extended branch key for bliss")
 	}
 
-
 	// Derive and return the key.
 	branchKey, err := acctKey.Child(branch)
 	if err != nil {
@@ -494,6 +495,8 @@ func (m *Manager) GetMasterPubkey(ns walletdb.ReadBucket, account uint32) (strin
 //
 // This function MUST be called with the manager lock held for writes.
 func (m *Manager) loadAccountInfo(ns walletdb.ReadBucket, account uint32) (*accountInfo, error) {
+	m.mtx2.Lock()
+	defer m.mtx2.Unlock()
 	// Return the account info from cache if it's available.
 	if acctInfo, ok := m.acctInfo[account]; ok {
 		if acctInfo.acctType == AcctypeEc {
@@ -604,11 +607,12 @@ func (m *Manager) AccountProperties(ns walletdb.ReadBucket, account uint32) (*Ac
 			importedKeyCount++
 			return nil
 		}
-		err := forEachAccountAddress(ns, ImportedAddrAccount, count)
+		algType, err := forEachAccountAddress(ns, ImportedAddrAccount, count)
 		if err != nil {
 			return nil, err
 		}
 		props.ImportedKeyCount = importedKeyCount
+		props.AccountType = algType
 	}
 
 	return props, nil
@@ -650,7 +654,6 @@ func (m *Manager) AccountExtendedPrivKey(dbtx walletdb.ReadTx, account uint32) (
 	return nil, fmt.Errorf("wallet is locked")
 }
 
-
 // AccountBranchExtendedPubKey returns the extended public key of an account's
 // branch, which then can be used to derive addresses belonging to the account.
 func (m *Manager) AccountBranchExtendedPrivKey(dbtx walletdb.ReadTx, account, branch uint32) (*hdkeychain.ExtendedKey, error) {
@@ -670,7 +673,6 @@ func (m *Manager) AccountBranchExtendedPrivKey(dbtx walletdb.ReadTx, account, br
 	defer acctXpriv.Zero()
 	return branchXpriv, nil
 }
-
 
 func (m *Manager) AccountBranchExtendedPubKey(dbtx walletdb.ReadTx, account, branch uint32) (*hdkeychain.ExtendedKey, error) {
 	var branchXpub *hdkeychain.ExtendedKey
@@ -1638,10 +1640,10 @@ func (m *Manager) syncAccountToAddrIndex(ns walletdb.ReadWriteBucket, account ui
 	if acctInfo.acctType == AcctypeBliss {
 		for child := syncToIndex; ; child-- {
 			xprivChild, err := xprivBranch.Child(child)
-			xpubChild, err := xprivChild.Neuter()
 			if err == hdkeychain.ErrInvalidChild {
 				continue
 			}
+			xpubChild, err := xprivChild.Neuter()
 			if err != nil {
 				const str = "failed to derive child xpub"
 				return apperrors.E{ErrorCode: apperrors.ErrKeyChain, Description: str, Err: err}
@@ -1660,7 +1662,7 @@ func (m *Manager) syncAccountToAddrIndex(ns walletdb.ReadWriteBucket, account ui
 			if err != nil {
 				return err
 			}
- 
+
 			if child == 0 {
 				break
 			}
@@ -1895,7 +1897,7 @@ func (m *Manager) ForEachAccountAddress(ns walletdb.ReadBucket, account uint32,
 		}
 		return fn(managedAddr)
 	}
-	err := forEachAccountAddress(ns, account, addrFn)
+	_, err := forEachAccountAddress(ns, account, addrFn)
 	if err != nil {
 		return maybeConvertDbError(err)
 	}
@@ -1997,7 +1999,11 @@ func (m *Manager) PrivateKey(ns walletdb.ReadBucket, addr dcrutil.Address) (key 
 			err := apperrors.E{ErrorCode: apperrors.ErrCrypto, Description: str, Err: err}
 			return nil, nil, err
 		}
-		key, _ = chainec.Secp256k1.PrivKeyFromBytes(privKeyBytes)
+		if len(privKeyBytes) == 385 {
+			key, _ = bliss.Bliss.PrivKeyFromBytes(privKeyBytes)
+		} else {
+			key, _ = chainec.Secp256k1.PrivKeyFromBytes(privKeyBytes)
+		}
 		// PrivKeyFromBytes creates a copy of the private key, and therefore
 		// the decrypted private key bytes must be zeroed now.
 		zero.Bytes(privKeyBytes)
@@ -2240,7 +2246,7 @@ func deriveAccountKey(coinTypeKey *hdkeychain.ExtendedKey,
 	}
 
 	// Derive the account key as a child of the coin type key.
-	acctKeyPriv, err := coinTypeKey.SwitchChild(account + hdkeychain.HardenedKeyStart, acctype)
+	acctKeyPriv, err := coinTypeKey.SwitchChild(account+hdkeychain.HardenedKeyStart, acctype)
 	return acctKeyPriv, err
 }
 
@@ -2592,7 +2598,7 @@ func createAddressManager(ns walletdb.ReadWriteBucket, seed, pubPassphrase, priv
 
 		// Save the information for the default account to the database.
 		defaultRow := bip0044AccountInfo(acctPubEnc, acctPrivEnc, 0, 0, 0, 0, 0, 0,
-			defaultAccountName,  0, initialVersion)
+			defaultAccountName, 0, initialVersion)
 		return putAccountInfo(ns, DefaultAccountNum, defaultRow)
 	}()
 	if err != nil {
@@ -2794,7 +2800,7 @@ func createWatchOnly(ns walletdb.ReadWriteBucket, hdPubKey string,
 
 	// Save the information for the default account to the database.
 	defaultRow := bip0044AccountInfo(acctPubEnc, acctPrivEnc, 0, 0, 0, 0, 0, 0,
-		defaultAccountName, 0,initialVersion)
+		defaultAccountName, 0, initialVersion)
 	return putAccountInfo(ns, DefaultAccountNum, defaultRow)
 }
 
@@ -2803,7 +2809,7 @@ func (m *Manager) LoadBlissAddrs(ns walletdb.ReadBucket, account, branch, start,
 	var err error
 	addresses, err = fetchBlissAddresses(ns, account, branch, start, count)
 	if err != nil {
-		return  nil, err
+		return nil, err
 	}
 	return addresses, nil
 }
