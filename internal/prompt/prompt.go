@@ -352,17 +352,22 @@ func Seed(reader *bufio.Reader) ([]byte, error) {
 // previously specified in a configuration file.  The user will be given the
 // option of using this passphrase if public data encryption is enabled,
 // otherwise a user-specified passphrase will be prompted for.
-func Setup(r *bufio.Reader, insecurePubPass, configPubPass []byte) (privPass, pubPass, seed []byte, err error) {
-	// Decred: no legacy keystore restore is needed (first decred wallet
+func Setup(r *bufio.Reader, insecurePubPass, walletPass, configPubPass []byte) (privPass, pubPass, seed []byte, err error) {
+	// Hypercash: no legacy keystore restore is needed (first hypercash wallet
 	// version did not use the legacy keystore from earlier versions of
 	// btcwallet).
 
 	// Start by prompting for the private passphrase.  When there is an
 	// existing keystore, the user will be promped for that passphrase,
 	// otherwise they will be prompted for a new one.
-	privPass, err = PrivatePass(r)
-	if err != nil {
-		return
+
+	if bytes.Equal(walletPass, []byte("")) {
+		privPass, err = PrivatePass(r)
+		if err != nil {
+			return
+		}
+	} else {
+		privPass = walletPass
 	}
 
 	// Ascertain the public passphrase.  This will either be a value

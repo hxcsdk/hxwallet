@@ -154,6 +154,7 @@ type config struct {
 	DataDir      *cfgutil.ExplicitString `short:"b" long:"datadir" default-mask:"-" description:"DEPRECATED -- use appdata instead"`
 	PruneTickets bool                    `long:"prunetickets" description:"DEPRECATED -- old tickets are always pruned"`
 
+	// Added to assist postquantum functionality
 	createPass string
 }
 
@@ -391,6 +392,8 @@ func loadConfig() (*config, []string, error) {
 		preParser.WriteHelp(os.Stderr)
 		return loadConfigError(err)
 	}
+
+	// Add an argument to create a password for bliss functionality
 	if len(os.Args) > 2 && strings.HasPrefix(os.Args[2], "--pass=") {
 		pass := os.Args[2][7:]
 		cfg.createPass = pass
