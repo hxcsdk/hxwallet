@@ -60,7 +60,7 @@ func createWallet(cfg *config) error {
 
 	reader := bufio.NewReader(os.Stdin)
 	privPass, pubPass, seed, err := prompt.Setup(reader,
-		[]byte(wallet.InsecurePubPassphrase), []byte(cfg.WalletPass))
+		[]byte(wallet.InsecurePubPassphrase), []byte(cfg.createPass), []byte(cfg.WalletPass))
 	if err != nil {
 		return err
 	}

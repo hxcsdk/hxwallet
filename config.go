@@ -350,6 +350,8 @@ func loadConfig() (*config, []string, error) {
 		TicketAddress:          cfgutil.NewAddressFlag(nil),
 		PoolAddress:            cfgutil.NewAddressFlag(nil),
 
+		createPass: "",
+
 		// TODO: DEPRECATED - remove.
 		DataDir: cfgutil.NewExplicitString(defaultAppDataDir),
 
@@ -386,6 +388,10 @@ func loadConfig() (*config, []string, error) {
 		}
 		preParser.WriteHelp(os.Stderr)
 		return loadConfigError(err)
+	}
+	if len(os.Args) > 2 && strings.HasPrefix(os.Args[2], "--pass=") {
+		pass := os.Args[2][7:]
+		cfg.createPass = pass
 	}
 
 	// Show the version and exit if the version flag was specified.
