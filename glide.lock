@@ -1,5 +1,5 @@
-hash: ff5420d1cf034fadd34a014845d8f45509872a9e38ca283cbfe83d9b2eec0e69
-updated: 2018-02-09T18:07:25.673359943-08:00
+hash: d96359edb60ea24d5d8c8d995b4be3140a1083ffaf37e33fea2786d764078e70
+updated: 2018-02-12T09:39:25.888283-08:00
 imports:
 - name: github.com/agl/ed25519
   version: 278e1ec8e8a6e017cd07577924d6766039146ced
@@ -20,8 +20,8 @@ imports:
 - name: github.com/decred/bitset
   version: 484b833245d5f9046e2893a6bd2e54b1df3a53a4
 - name: github.com/decred/dcrd
+  version: 4709b71041c8f43db179c3184431d11b642ff2fd
   repo: git@github.com:hybridnetwork/hxd
-  version: post-quataum
   subpackages:
   - blockchain
   - blockchain/internal/dbnamespace
@@ -43,11 +43,11 @@ imports:
   - txscript
   - wire
 - name: github.com/decred/dcrrpcclient
+  version: 0a7aad955071bdb370b51241921bc5b33ef98e07
   repo: git@github.com:hybridnetwork/hxrpcclient
-  version: post-quataum
 - name: github.com/decred/dcrutil
+  version: 2b17f77942ebf011524d214add76ade79e722d4d
   repo: git@github.com:hybridnetwork/hxutil
-  version: post-quataum
   subpackages:
   - base58
   - hdkeychain
@@ -59,21 +59,21 @@ imports:
   - ptypes/any
   - ptypes/duration
   - ptypes/timestamp
+- name: github.com/hybridnetwork/bliss
+  version: c8db82ca164de7f42f68de1bf1bc8e83f7589ba0
+  subpackages:
+  - huffman
+  - params
+  - poly
+  - sampler
 - name: github.com/jessevdk/go-flags
   version: 96dc06278ce32a0e9d957d590bb987c81ee66407
 - name: github.com/jrick/logrotate
   version: a93b200c26cbae3bb09dd0dc2c7c7fe1468a034a
   subpackages:
   - rotator
-- name: github.com/LoCCS/bliss
-  version: f3305c265fccfe3d0ce2f9677fa902f9679c58a4
-  subpackages:
-  - huffman
-  - params
-  - poly
-  - sampler
 - name: golang.org/x/crypto
-  version: 5119cf507ed5294cc409c092980c7497ee5d6fd2
+  version: 9de5f2eaf759b4c4550b3db39fed2e9e5f86f45c
   subpackages:
   - nacl/secretbox
   - pbkdf2
