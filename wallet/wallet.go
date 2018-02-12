@@ -294,11 +294,11 @@ func (w *Wallet) VotingEnabled() bool {
 func voteVersion(params *chaincfg.Params) uint32 {
 	switch params.Net {
 	case wire.MainNet:
-		return 4
+		return 5
 	case wire.TestNet2:
-		return 5
+		return 6
 	case wire.SimNet:
-		return 5
+		return 6
 	default:
 		return 1
 	}
@@ -790,7 +790,10 @@ func (w *Wallet) loadActiveAddrs(dbtx walletdb.ReadTx, chainClient *chain.RPCCli
 		intKey.ECPubKey()
 		go loadBranchAddrs(extKey, extn, errs)
 		go loadBranchAddrs(intKey, intn, errs)
-		bip0044AddrCount += uint64(extn) + uint64(intn)
+		// loadBranchAddrs loads addresses through extn/intn, and the actual
+		// number of watched addresses is one more for each branch due to zero
+		// indexing.
+		bip0044AddrCount += uint64(extn) + uint64(intn) + 2
 	}
 	go func() {
 		// Imported addresses are still sent as a single slice for now.  Could
@@ -3603,7 +3606,7 @@ func (w *Wallet) SignTransaction(tx *wire.MsgTx, hashType txscript.SigHashType,
 			// Either it was already signed or we just signed it.
 			// Find out if it is completely satisfied or still needs more.
 			vm, err := txscript.NewEngine(prevOutScript, tx, i,
-				txscript.StandardVerifyFlags, txscript.DefaultScriptVersion, nil)
+				sanityVerifyFlags, txscript.DefaultScriptVersion, nil)
 			if err == nil {
 				err = vm.Execute()
 			}
@@ -3638,6 +3641,44 @@ func (w *Wallet) SignTransaction(tx *wire.MsgTx, hashType txscript.SigHashType,
 		return nil
 	})
 	return signErrors, err
+}
+
+// CreateSignature returns the raw signature created by the private key of addr
+// for tx's idx'th input script and the serialized compressed pubkey for the
+// address.
+func (w *Wallet) CreateSignature(tx *wire.MsgTx, idx uint32, addr dcrutil.Address,
+	hashType txscript.SigHashType, prevPkScript []byte) (sig, pubkey []byte, err error) {
+
+	var privKey chainec.PrivateKey
+	var pubKey chainec.PublicKey
+	var done func()
+	defer func() {
+		if done != nil {
+			done()
+		}
+	}()
+
+	err = walletdb.View(w.db, func(dbtx walletdb.ReadTx) error {
+		ns := dbtx.ReadBucket(waddrmgrNamespaceKey)
+
+		var err error
+		privKey, done, err = w.Manager.PrivateKey(ns, addr)
+		if err != nil {
+			return err
+		}
+		pubKey = chainec.Secp256k1.NewPublicKey(privKey.Public())
+		return nil
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	sig, err = txscript.RawTxInSignature(tx, int(idx), prevPkScript, hashType, privKey)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return sig, pubKey.SerializeCompressed(), nil
 }
 
 // isRelevantTx determines whether the transaction is relevant to the wallet and
