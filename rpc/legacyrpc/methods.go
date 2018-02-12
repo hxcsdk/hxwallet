@@ -941,23 +941,7 @@ func keypoolRefill(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 // returning a new account. If the last account has no transaction history
 // as per BIP 0044 a new account cannot be created so an error will be returned.
 func createNewAccount(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
-	cmd := icmd.(*dcrjson.CreateNewAccountCmd)
-
-	// The wildcard * is reserved by the rpc server with the special meaning
-	// of "all accounts", so disallow naming accounts to this string.
-	if cmd.Account == "*" {
-		return nil, &ErrReservedAccountName
-	}
-
-	_, err := w.NextAccount(cmd.Account)
-	if apperrors.IsError(err, apperrors.ErrLocked) {
-		return nil, &dcrjson.RPCError{
-			Code: dcrjson.ErrRPCWalletUnlockNeeded,
-			Message: "Creating an account requires the wallet to be unlocked. " +
-				"Enter the wallet passphrase with walletpassphrase to unlock",
-		}
-	}
-	return nil, err
+	return nil, fmt.Errorf("not support this function now")
 }
 
 // renameAccount handles a renameaccount request by renaming an account.
@@ -1880,6 +1864,10 @@ func purchaseTicket(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 		return nil, ErrNeedPositiveSpendLimit
 	}
 
+	if cmd.FromAccount == udb.BlissAccountName {
+		return nil, fmt.Errorf("unsupported account type for buying tickets")
+	}
+
 	account, err := w.AccountNumber(cmd.FromAccount)
 	if err != nil {
 		return nil, err
@@ -1899,6 +1887,9 @@ func purchaseTicket(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 	var ticketAddr dcrutil.Address
 	if cmd.TicketAddress != nil {
 		if *cmd.TicketAddress != "" {
+			if bytes.Equal([]byte((*cmd.TicketAddress)[0:2]), []byte("Hb")) {
+				return nil, fmt.Errorf("postquantum addresses not yet supported")
+			}
 			addr, err := decodeAddress(*cmd.TicketAddress, w.ChainParams())
 			if err != nil {
 				return nil, err
@@ -3005,18 +2996,30 @@ func validateAddress(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 
 	switch ma := ainfo.(type) {
 	case udb.ManagedPubKeyAddress:
+		var pubKeyBytes []byte
+		var err error
+
 		result.IsCompressed = ma.Compressed()
 		result.PubKey = ma.ExportPubKey()
-		pubKeyBytes, err := hex.DecodeString(result.PubKey)
+		pubKeyBytes, err = hex.DecodeString(result.PubKey)
 		if err != nil {
 			return nil, err
 		}
-		pubKeyAddr, err := dcrutil.NewAddressSecpPubKey(pubKeyBytes,
-			w.ChainParams())
-		if err != nil {
-			return nil, err
+		if bytes.Equal([]byte(result.Address[0:2]), []byte("Hb")) {
+			pubKeyAddr, err := dcrutil.NewAddressBlissPubKey(pubKeyBytes,
+				w.ChainParams())
+			if err != nil {
+				return nil, err
+			}
+			result.PubKeyAddr = pubKeyAddr.String()
+		} else {
+			pubKeyAddr, err := dcrutil.NewAddressSecpPubKey(pubKeyBytes,
+				w.ChainParams())
+			if err != nil {
+				return nil, err
+			}
+			result.PubKeyAddr = pubKeyAddr.String()
 		}
-		result.PubKeyAddr = pubKeyAddr.String()
 
 	case udb.ManagedScriptAddress:
 		result.IsScript = true

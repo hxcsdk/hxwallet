@@ -155,7 +155,7 @@ func newWallet(votingEnabled bool, addressReuse bool, ticketAddress dcrutil.Addr
 	poolAddress dcrutil.Address, pf float64, relayFee, ticketFee dcrutil.Amount,
 	gapLimit int, stakePoolColdAddrs map[string]struct{}, AllowHighFees bool,
 	mgr *udb.Manager, txs *udb.Store, smgr *udb.StakeStore, db *walletdb.DB,
-	params *chaincfg.Params) *Wallet {
+	params *chaincfg.Params, privpass []byte) (*Wallet, error) {
 
 	w := &Wallet{
 		db:                       *db,
@@ -193,9 +193,19 @@ func newWallet(votingEnabled bool, addressReuse bool, ticketAddress dcrutil.Addr
 		quit:                     make(chan struct{}),
 	}
 
+	w.wg.Add(1)
+	go w.walletLocker()
+
 	// TODO: remove newWallet, stick the above in Open, and don't ignore this
 	// error.
 	var vb stake.VoteBits
+	var unlockAfter <-chan time.Time
+	var extKey, intKey *hdkeychain.ExtendedKey
+	err := w.Unlock(privpass, unlockAfter)
+	if err != nil {
+		return nil, err
+	}
+
 	walletdb.View(w.db, func(tx walletdb.ReadTx) error {
 		ns := tx.ReadBucket(waddrmgrNamespaceKey)
 		lastAcct, err := w.Manager.LastAccount(ns)
@@ -204,10 +214,7 @@ func newWallet(votingEnabled bool, addressReuse bool, ticketAddress dcrutil.Addr
 		}
 		for acct := uint32(0); acct <= lastAcct; acct++ {
 			xpub, err := w.Manager.AccountExtendedPubKey(tx, acct)
-			if err != nil {
-				return err
-			}
-			extKey, intKey, err := deriveBranches(xpub)
+
 			if err != nil {
 				return err
 			}
@@ -215,6 +222,38 @@ func newWallet(votingEnabled bool, addressReuse bool, ticketAddress dcrutil.Addr
 			if err != nil {
 				return err
 			}
+			if props.AccountType == udb.AcctypeEc {
+				extKey, intKey, err = deriveBranches(xpub)
+				if err != nil {
+					return err
+				}
+			}
+			if props.AccountType == udb.AcctypeBliss {
+				xpriv, err := w.Manager.AccountExtendedPrivKey(tx, acct)
+				if err != nil {
+					return err
+				}
+				extpriv, err := xpriv.Child(udb.ExternalBranch)
+				if err != nil {
+					return err
+				}
+				extKey, err = extpriv.Neuter()
+				if err != nil {
+					return err
+				}
+				intpriv, err := xpriv.Child(udb.InternalBranch)
+				if err != nil {
+					return err
+				}
+				intKey, err = intpriv.Neuter()
+				if err != nil {
+					return err
+				}
+				xpriv.Zero()
+				intpriv.Zero()
+				extpriv.Zero()
+			}
+
 			w.addressBuffers[acct] = &bip0044AccountData{
 				albExternal: addressBuffer{
 					branchXpub: extKey,
@@ -236,7 +275,7 @@ func newWallet(votingEnabled bool, addressReuse bool, ticketAddress dcrutil.Addr
 
 	w.NtfnServer = newNotificationServer(w)
 	w.voteBits = vb
-	return w
+	return w, nil
 }
 
 // StakeDifficulty is used to get the current stake difficulty from the daemon.
@@ -515,6 +554,27 @@ func (w *Wallet) Start() {
 	}
 	w.quitMu.Unlock()
 
+	w.wg.Add(1)
+	go w.txCreator()
+}
+
+func (w *Wallet) ReconnectStart() {
+	w.quitMu.Lock()
+	select {
+	case <-w.quit:
+		// Restart the wallet goroutines after shutdown finishes.
+		w.WaitForShutdown()
+		w.quit = make(chan struct{})
+	default:
+		// Ignore when the wallet is still running.
+		if w.started {
+			w.quitMu.Unlock()
+			return
+		}
+		w.started = true
+	}
+	w.quitMu.Unlock()
+
 	w.wg.Add(2)
 	go w.txCreator()
 	go w.walletLocker()
@@ -762,6 +822,50 @@ func (w *Wallet) loadActiveAddrs(dbtx walletdb.ReadTx, chainClient *chain.RPCCli
 		errs <- nil
 	}
 
+	loadBlissAddrs := func(account, branch, n uint32, branchkey *hdkeychain.ExtendedKey, errs chan<- error) {
+		jobs := n/256 + 1
+		jobErrs := make(chan error, jobs)
+		for child := uint32(0); child <= n; child += 256 {
+			go func(child uint32) {
+				addrs := getAddrs()
+				stop := minUint32(n+1, child+256)
+				for ; child < stop; child++ {
+					var addr *dcrutil.AddressPubKeyHash
+					err := walletdb.View(w.db, func(tx walletdb.ReadTx) error {
+						addrmgrNs := tx.ReadBucket(waddrmgrNamespaceKey)
+						var err error
+						addr, err = w.Manager.LoadBlissAddr(addrmgrNs, account, branch, child)
+						if err != nil {
+							_, err := branchkey.Child(child)
+							if err == hdkeychain.ErrInvalidChild {
+								return err
+							}
+						}
+						return err
+					})
+					if err == hdkeychain.ErrInvalidChild {
+						continue
+					}
+					if err != nil {
+						jobErrs <- err
+						return
+					}
+					addrs = append(addrs, addr)
+				}
+				future := chainClient.LoadTxFilterAsync(false, addrs, nil)
+				recycleAddrs(addrs)
+				jobErrs <- future.Receive()
+			}(child)
+		}
+		for i := 0; i < cap(jobErrs); i++ {
+			err := <-jobErrs
+			if err != nil {
+				errs <- err
+				return
+			}
+		}
+		errs <- nil
+	}
 	addrmgrNs := dbtx.ReadBucket(waddrmgrNamespaceKey)
 	lastAcct, err := w.Manager.LastAccount(addrmgrNs)
 	if err != nil {
@@ -770,17 +874,36 @@ func (w *Wallet) loadActiveAddrs(dbtx walletdb.ReadTx, chainClient *chain.RPCCli
 	errs := make(chan error, int(lastAcct+1)*2+1)
 	var bip0044AddrCount, importedAddrCount uint64
 	for acct := uint32(0); acct <= lastAcct; acct++ {
+		var xpub, xpriv, extKey, intKey, intKeypriv, extKeypriv *hdkeychain.ExtendedKey
 		props, err := w.Manager.AccountProperties(addrmgrNs, acct)
 		if err != nil {
 			return 0, err
 		}
-		acctXpub, err := w.Manager.AccountExtendedPubKey(dbtx, acct)
+		if props.AccountType == udb.AcctypeEc {
+			xpub, err = w.Manager.AccountExtendedPubKey(dbtx, acct)
+		} else if props.AccountType == udb.AcctypeBliss {
+			xpriv, err = w.Manager.AccountExtendedPrivKey(dbtx, acct)
+			if err != nil {
+				return 0, err
+			}
+		}
 		if err != nil {
 			return 0, err
 		}
-		extKey, intKey, err := deriveBranches(acctXpub)
-		if err != nil {
-			return 0, err
+		if props.AccountType == udb.AcctypeEc {
+			extKey, intKey, err = deriveBranches(xpub)
+			if err != nil {
+				return 0, err
+			}
+		} else if props.AccountType == udb.AcctypeBliss {
+			intKeypriv, err = xpriv.Child(udb.InternalBranch)
+			intKey, err = intKeypriv.Neuter()
+			extKeypriv, err = xpriv.Child(udb.ExternalBranch)
+			extKey, err = extKeypriv.Neuter()
+			xpriv.Zero()
+			if err != nil {
+				return 0, err
+			}
 		}
 		gapLimit := uint32(w.gapLimit)
 		extn := minUint32(props.LastReturnedExternalIndex+gapLimit, hdkeychain.HardenedKeyStart-1)
@@ -788,12 +911,29 @@ func (w *Wallet) loadActiveAddrs(dbtx walletdb.ReadTx, chainClient *chain.RPCCli
 		// pre-cache the pubkey results so concurrent access does not race.
 		extKey.ECPubKey()
 		intKey.ECPubKey()
+<<<<<<< HEAD
 		go loadBranchAddrs(extKey, extn, errs)
 		go loadBranchAddrs(intKey, intn, errs)
 		// loadBranchAddrs loads addresses through extn/intn, and the actual
 		// number of watched addresses is one more for each branch due to zero
 		// indexing.
 		bip0044AddrCount += uint64(extn) + uint64(intn) + 2
+=======
+		if extKey.GetAlgType() == udb.AcctypeEc {
+			go loadBranchAddrs(extKey, extn, errs)
+			go loadBranchAddrs(intKey, intn, errs)
+		} else if extKey.GetAlgType() == udb.AcctypeBliss {
+			go loadBlissAddrs(props.AccountNumber, udb.ExternalBranch, extn, extKeypriv, errs)
+			go loadBlissAddrs(props.AccountNumber, udb.InternalBranch, intn, intKeypriv, errs)
+			defer intKeypriv.Zero()
+			defer extKeypriv.Zero()
+		}
+
+		// loadBranchAddrs loads addresses through extn/intn, and the actual
+		// number of watched addresses is one more for each branch due to zero
+		// indexing.
+		bip0044AddrCount += uint64(extn) + uint64(intn)
+>>>>>>> bogrod-pqdev
 	}
 	go func() {
 		// Imported addresses are still sent as a single slice for now.  Could
@@ -1653,8 +1793,15 @@ func (w *Wallet) CalculateAccountBalances(confirms int32) (map[uint32]*udb.Balan
 // spending to it in the blockchain or dcrd mempool), the next chained address
 // is returned.
 func (w *Wallet) CurrentAddress(account uint32) (dcrutil.Address, error) {
+	var child *hdkeychain.ExtendedKey
+	var err error
 	defer w.addressBuffersMu.Unlock()
 	w.addressBuffersMu.Lock()
+
+	if w.Manager.IsLocked() {
+		const str = "wallet not unlocked"
+		return nil, apperrors.E{ErrorCode: apperrors.ErrLocked, Description: str, Err: nil}
+	}
 
 	data, ok := w.addressBuffers[account]
 	if !ok {
@@ -1663,13 +1810,30 @@ func (w *Wallet) CurrentAddress(account uint32) (dcrutil.Address, error) {
 	}
 	buf := &data.albExternal
 
-	childIndex := buf.lastUsed + 1 + buf.cursor
-	child, err := buf.branchXpub.Child(childIndex)
-	if err != nil {
-		const str = "failed to derive child key"
-		return nil, apperrors.E{ErrorCode: apperrors.ErrKeyChain, Description: str, Err: nil}
+	if buf.branchXpub.GetAlgType() == udb.AcctypeEc {
+		childIndex := buf.lastUsed + 1 + buf.cursor
+		child, err = buf.branchXpub.Child(childIndex)
+		if err != nil {
+			const str = "failed to derive child key"
+			return nil, apperrors.E{ErrorCode: apperrors.ErrKeyChain, Description: str, Err: nil}
+		}
 	}
-	return child.Address(w.chainParams)
+	if buf.branchXpub.GetAlgType() == udb.AcctypeBliss {
+		var blissaddr *dcrutil.AddressPubKeyHash
+		childIndex := buf.lastUsed + 1 + buf.cursor
+		err = walletdb.View(w.db, func(tx walletdb.ReadTx) error {
+			addrmgrNs := tx.ReadBucket(waddrmgrNamespaceKey)
+			var err error
+			blissaddr, err = w.Manager.LoadBlissAddr(addrmgrNs, account, udb.ExternalBranch, childIndex)
+			return err
+		})
+		if err != nil {
+			return nil, err
+		}
+		return blissaddr, nil
+	}
+
+	return child.Address(w.chainParams, child.GetAlgType())
 }
 
 // PubKeyForAddress looks up the associated public key for a P2PKH address.
@@ -1877,10 +2041,11 @@ const maxEmptyAccounts = 100
 // restoring, new accounts may not be created when all of the previous 100
 // accounts have no transaction history (this is a deviation from the BIP0044
 // spec, which allows no unused account gaps).
-func (w *Wallet) NextAccount(name string) (uint32, error) {
+func (w *Wallet) NextAccount(name string, actype uint8) (uint32, error) {
 	var account uint32
 	var props *udb.AccountProperties
-	var xpub *hdkeychain.ExtendedKey
+	var xpub, xpriv *hdkeychain.ExtendedKey
+	var extKey, intKey *hdkeychain.ExtendedKey
 	err := walletdb.Update(w.db, func(tx walletdb.ReadWriteTx) error {
 		addrmgrNs := tx.ReadWriteBucket(waddrmgrNamespaceKey)
 
@@ -1911,7 +2076,7 @@ func (w *Wallet) NextAccount(name string) (uint32, error) {
 			return errors.New("last 100 accounts have no transaction history")
 		}
 
-		account, err = w.Manager.NewAccount(addrmgrNs, name)
+		account, err = w.Manager.NewAccount(addrmgrNs, name, actype)
 		if err != nil {
 			return err
 		}
@@ -1921,7 +2086,14 @@ func (w *Wallet) NextAccount(name string) (uint32, error) {
 			return err
 		}
 
-		xpub, err = w.Manager.AccountExtendedPubKey(tx, account)
+		if props.AccountType == udb.AcctypeEc {
+			xpub, err = w.Manager.AccountExtendedPubKey(tx, account)
+		} else if props.AccountType == udb.AcctypeBliss {
+			xpriv, err = w.Manager.AccountExtendedPrivKey(tx, account)
+			if err != nil {
+				return err
+			}
+		}
 		if err != nil {
 			return err
 		}
@@ -1939,9 +2111,22 @@ func (w *Wallet) NextAccount(name string) (uint32, error) {
 		return 0, err
 	}
 
-	extKey, intKey, err := deriveBranches(xpub)
-	if err != nil {
-		return 0, err
+	if props.AccountType == udb.AcctypeEc {
+		extKey, intKey, err = deriveBranches(xpub)
+		if err != nil {
+			return 0, err
+		}
+	} else if props.AccountType == udb.AcctypeBliss {
+		intKeypriv, err := xpriv.Child(udb.InternalBranch)
+		intKey, err = intKeypriv.Neuter()
+		extKeypriv, err := xpriv.Child(udb.ExternalBranch)
+		extKey, err = extKeypriv.Neuter()
+		intKeypriv.Zero()
+		extKeypriv.Zero()
+		xpriv.Zero()
+		if err != nil {
+			return 0, err
+		}
 	}
 	w.addressBuffersMu.Lock()
 	w.addressBuffers[account] = &bip0044AccountData{
@@ -1956,13 +2141,36 @@ func (w *Wallet) NextAccount(name string) (uint32, error) {
 		for _, branchKey := range []*hdkeychain.ExtendedKey{extKey, intKey} {
 			branchKey := branchKey
 			go func() {
-				addrs, err := deriveChildAddresses(branchKey, 0,
-					uint32(w.gapLimit), w.chainParams)
-				if err != nil {
-					errs <- err
-					return
+				if branchKey.GetAlgType() == udb.AcctypeEc {
+					addrs, err := deriveChildAddresses(branchKey, 0,
+						uint32(w.gapLimit), w.chainParams)
+					if err != nil {
+						errs <- err
+						return
+					}
+					errs <- client.LoadTxFilter(false, addrs, nil)
 				}
-				errs <- client.LoadTxFilter(false, addrs, nil)
+				if branchKey.GetAlgType() == udb.AcctypeBliss {
+					addrs := make([]dcrutil.Address, DefaultGapLimit)
+					err := walletdb.Update(w.db, func(tx walletdb.ReadWriteTx) error {
+						addrmgrNs := tx.ReadWriteBucket(waddrmgrNamespaceKey)
+						addrsExt, err := w.Manager.LoadBlissAddrs(addrmgrNs, account, udb.ExternalBranch, 0, DefaultGapLimit)
+						if err != nil {
+							return err
+						}
+						addrsInt, err := w.Manager.LoadBlissAddrs(addrmgrNs, account, udb.InternalBranch, 0, DefaultGapLimit)
+						if err != nil {
+							return err
+						}
+						addrs = append(addrsExt, addrsInt[:]...)
+						return nil
+					})
+					if err != nil {
+						errs <- err
+						return
+					}
+					errs <- client.LoadTxFilter(false, addrs, nil)
+				}
 			}()
 		}
 		for i := 0; i < cap(errs); i++ {
@@ -3842,6 +4050,9 @@ func decodeStakePoolColdExtKey(encStr string, params *chaincfg.Params) (map[stri
 	if !key.IsForNet(params) {
 		return nil, fmt.Errorf("extended public key is for wrong network")
 	}
+	if key.GetAlgType() != udb.AcctypeEc {
+		return nil, fmt.Errorf("wrong key type for stakepool")
+	}
 
 	// Parse the ending index and ensure it's valid.
 	end, err := strconv.Atoi(splStrs[1])
@@ -3877,7 +4088,7 @@ func decodeStakePoolColdExtKey(encStr string, params *chaincfg.Params) (map[stri
 }
 
 // Open loads an already-created wallet from the passed database and namespaces.
-func Open(db walletdb.DB, pubPass []byte, votingEnabled bool, addressReuse bool,
+func Open(db walletdb.DB, pubPass []byte, privPass []byte, votingEnabled bool, addressReuse bool,
 	ticketAddress dcrutil.Address, poolAddress dcrutil.Address, poolFees float64, ticketFee float64,
 	gapLimit int, stakePoolColdExtKey string, allowHighFees bool,
 	relayFee float64, params *chaincfg.Params) (*Wallet, error) {
@@ -3895,7 +4106,7 @@ func Open(db walletdb.DB, pubPass []byte, votingEnabled bool, addressReuse bool,
 	}
 
 	// Perform upgrades as necessary.
-	err = udb.Upgrade(db, pubPass)
+	err = udb.Upgrade(db, pubPass, privPass)
 	if err != nil {
 		return nil, err
 	}
@@ -3924,7 +4135,7 @@ func Open(db walletdb.DB, pubPass []byte, votingEnabled bool, addressReuse bool,
 
 	log.Infof("Opened wallet") // TODO: log balance? last sync height?
 
-	w := newWallet(
+	w, err := newWallet(
 		votingEnabled,
 		addressReuse,
 		ticketAddress,
@@ -3940,7 +4151,11 @@ func Open(db walletdb.DB, pubPass []byte, votingEnabled bool, addressReuse bool,
 		smgr,
 		&db,
 		params,
+		privPass,
 	)
+	if err != nil {
+		return nil, err
+	}
 
 	return w, nil
 }

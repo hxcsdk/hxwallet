@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/decred/dcrutil"
 	"github.com/decred/dcrwallet/apperrors"
 	"github.com/decred/dcrwallet/walletdb"
 )
@@ -48,9 +49,9 @@ type syncStatus uint8
 // NOTE: These are currently unused but are being defined for the possibility of
 // supporting sync status on a per-address basis.
 const (
-	ssNone    syncStatus = 0 // not iota as they need to be stable for db
-	ssPartial syncStatus = 1
-	ssFull    syncStatus = 2
+	SSNone    syncStatus = 0 // not iota as they need to be stable for db
+	SSPartial syncStatus = 1
+	SSFull    syncStatus = 2
 )
 
 // addressType represents a type of address stored in the database.
@@ -68,12 +69,14 @@ type accountType uint8
 
 // These constants define the various supported account types.
 const (
-	actBIP0044 accountType = 0 // not iota as they need to be stable for db
+	actBIP0044 uint8 = 0 // not iota as they need to be stable for db
+	actBliss   uint8 = 1
+	actMSS     uint8 = 2
 )
 
 // dbAccountRow houses information stored about an account in the database.
 type dbAccountRow struct {
-	acctType accountType
+	acctType uint8
 	rawData  []byte // Varies based on account type field.
 }
 
@@ -116,6 +119,7 @@ type dbImportedAddressRow struct {
 	dbAddressRow
 	encryptedPubKey  []byte
 	encryptedPrivKey []byte
+	algType          uint8
 }
 
 // dbImportedAddressRow houses additional information stored about a script
@@ -164,6 +168,8 @@ var (
 	// meta is used to store meta-data about the address manager
 	// e.g. last account number
 	metaBucketName = []byte("meta")
+
+	blissaddrIdxBucketName = []byte("blissaddridx")
 
 	// addrPoolMetaKeyLen is the byte length of the address pool
 	// prefixes. It is 11 bytes for the prefix and 4 bytes for
@@ -474,7 +480,7 @@ func deserializeAccountRow(accountID []byte, serializedAccount []byte) (*dbAccou
 	}
 
 	row := dbAccountRow{}
-	row.acctType = accountType(serializedAccount[0])
+	row.acctType = uint8(serializedAccount[0])
 	rdlen := binary.LittleEndian.Uint32(serializedAccount[1:5])
 	row.rawData = make([]byte, rdlen)
 	copy(row.rawData, serializedAccount[5:5+rdlen])
@@ -608,11 +614,11 @@ func serializeBIP0044AccountRow(row *dbBIP0044AccountRow, dbVersion uint32) []by
 
 func bip0044AccountInfo(pubKeyEnc, privKeyEnc []byte, nextExtIndex, nextIntIndex,
 	lastUsedExtIndex, lastUsedIntIndex, lastRetExtIndex, lastRetIntIndex uint32,
-	name string, dbVersion uint32) *dbBIP0044AccountRow {
+	name string, acctype uint8, dbVersion uint32) *dbBIP0044AccountRow {
 
 	row := &dbBIP0044AccountRow{
 		dbAccountRow: dbAccountRow{
-			acctType: actBIP0044,
+			acctType: acctype,
 			rawData:  nil,
 		},
 		pubKeyEncrypted:           pubKeyEnc,
@@ -718,8 +724,7 @@ func fetchAccountInfo(ns walletdb.ReadBucket, account uint32, dbVersion uint32) 
 		return nil, err
 	}
 
-	switch row.acctType {
-	case actBIP0044:
+	if row.acctType == 0 || row.acctType == 1 || row.acctType == 2 {
 		return deserializeBIP0044AccountRow(accountID, row, dbVersion)
 	}
 
@@ -830,7 +835,7 @@ func putAccountInfo(ns walletdb.ReadWriteBucket, account uint32, row *dbBIP0044A
 }
 
 // putLastAccount stores the provided metadata - last account - to the database.
-func putLastAccount(ns walletdb.ReadWriteBucket, account uint32) error {
+func PutLastAccount(ns walletdb.ReadWriteBucket, account uint32) error {
 	bucket := ns.NestedReadWriteBucket(metaBucketName)
 
 	err := bucket.Put(lastAccountName, uint32ToBytes(account))
@@ -953,6 +958,11 @@ func deserializeImportedAddress(row *dbAddressRow) (*dbImportedAddressRow, error
 	retRow.encryptedPrivKey = make([]byte, privLen)
 	copy(retRow.encryptedPrivKey, row.rawData[offset:offset+privLen])
 
+	if privLen == 72 {
+		retRow.algType = AcctypeEc
+	} else if privLen == 425 {
+		retRow.algType = AcctypeBliss
+	}
 	return &retRow, nil
 }
 
@@ -1071,6 +1081,36 @@ func fetchAddress(ns walletdb.ReadBucket, addressID []byte) (interface{}, error)
 	return fetchAddressByHash(ns, addrHash[:])
 }
 
+func fetchBlissAddress(ns walletdb.ReadBucket, account, branch, index uint32) []byte {
+	bucket := ns.NestedReadBucket(blissaddrIdxBucketName)
+	rawData := make([]byte, 12)
+	binary.LittleEndian.PutUint32(rawData[0:4], account)
+	binary.LittleEndian.PutUint32(rawData[4:8], branch)
+	binary.LittleEndian.PutUint32(rawData[8:12], index)
+	addridx := sha256.Sum256(rawData)
+	addrpubkeyHash := bucket.Get(addridx[:])
+	return addrpubkeyHash
+}
+
+func fetchBlissAddresses(ns walletdb.ReadBucket, account, branch, start, count uint32) ([]dcrutil.Address, error) {
+	addresses := make([]dcrutil.Address, 0, count)
+	for i := uint32(start); i < count; i++ {
+		blissaddr := fetchBlissAddress(ns, account, branch, i)
+		blisspubkeyaddrstr := string(blissaddr)
+		pubkeyhash, err := dcrutil.DecodeAddress(blisspubkeyaddrstr)
+		if err != nil {
+			return nil, err
+		}
+		addr, ok := pubkeyhash.(*dcrutil.AddressPubKeyHash)
+
+		if !ok {
+			return nil, fmt.Errorf("wrong rawaddr type error")
+		}
+		addresses = append(addresses, addr)
+	}
+	return addresses, nil
+}
+
 // putAddress stores the provided address information to the database.  This
 // is used a common base for storing the various address types.
 func putAddress(ns walletdb.ReadWriteBucket, addressID []byte, row *dbAddressRow) error {
@@ -1091,9 +1131,10 @@ func putAddress(ns walletdb.ReadWriteBucket, addressID []byte, row *dbAddressRow
 
 // putChainedAddress stores the provided chained address information to the
 // database.
-func putChainedAddress(ns walletdb.ReadWriteBucket, addressID []byte, account uint32,
+func putChainedAddress(ns walletdb.ReadWriteBucket, addr *dcrutil.AddressPubKeyHash, account uint32,
 	status syncStatus, branch, index uint32) error {
 
+	addressID := addr.Hash160()[:]
 	addrRow := dbAddressRow{
 		addrType:   adtChain,
 		account:    account,
@@ -1101,7 +1142,29 @@ func putChainedAddress(ns walletdb.ReadWriteBucket, addressID []byte, account ui
 		syncStatus: status,
 		rawData:    serializeChainedAddress(branch, index),
 	}
+	accoutinfo, err := fetchAccountInfo(ns, account, DBVersion)
+	if err != nil {
+		return err
+	}
+	if accoutinfo.acctType == AcctypeBliss {
+		putblissaddridx(ns, []byte(addr.EncodeAddress()), account, branch, index)
+	}
 	return putAddress(ns, addressID, &addrRow)
+}
+
+func putblissaddridx(ns walletdb.ReadWriteBucket, addressID []byte, account, branch, index uint32) error {
+	bucket := ns.NestedReadWriteBucket(blissaddrIdxBucketName)
+	rawData := make([]byte, 12)
+	binary.LittleEndian.PutUint32(rawData[0:4], account)
+	binary.LittleEndian.PutUint32(rawData[4:8], branch)
+	binary.LittleEndian.PutUint32(rawData[8:12], index)
+	addridx := sha256.Sum256(rawData)
+	err := bucket.Put(addridx[:], addressID)
+	if err != nil {
+		str := fmt.Sprintf("failed to store bliss address idx")
+		return managerError(apperrors.ErrDatabase, str, err)
+	}
+	return nil
 }
 
 // putImportedAddress stores the provided imported address information to the
@@ -1161,20 +1224,22 @@ func fetchAddrAccount(ns walletdb.ReadBucket, addressID []byte) (uint32, error) 
 
 // forEachAccountAddress calls the given function with each address of
 // the given account stored in the manager, breaking early on error.
-func forEachAccountAddress(ns walletdb.ReadBucket, account uint32, fn func(rowInterface interface{}) error) error {
+func forEachAccountAddress(ns walletdb.ReadBucket, account uint32, fn func(rowInterface interface{}) error) (uint8, error) {
 	bucket := ns.NestedReadBucket(addrAcctIdxBucketName).
 		NestedReadBucket(uint32ToBytes(account))
 	// if index bucket is missing the account, there hasn't been any address
 	// entries yet
 	if bucket == nil {
-		return nil
+		return 255, nil
 	}
 
+	var addrRow interface{}
 	err := bucket.ForEach(func(k, v []byte) error {
 		// Skip buckets.
 		if v == nil {
 			return nil
 		}
+		var err error
 		addrRow, err := fetchAddressByHash(ns, k)
 		if err != nil {
 			if merr, ok := err.(apperrors.E); ok {
@@ -1189,9 +1254,14 @@ func forEachAccountAddress(ns walletdb.ReadBucket, account uint32, fn func(rowIn
 		return fn(addrRow)
 	})
 	if err != nil {
-		return maybeConvertDbError(err)
+		return 255, maybeConvertDbError(err)
 	}
-	return nil
+
+	switch row := addrRow.(type) {
+	case *dbImportedAddressRow:
+		return row.algType, nil
+	}
+	return 255, nil
 }
 
 // forEachActiveAddress calls the given function with each active address
@@ -1282,7 +1352,7 @@ func deletePrivateKeys(ns walletdb.ReadWriteBucket, dbVersion uint32) error {
 				arow.nextExternalIndex, arow.nextInternalIndex,
 				arow.lastUsedExternalIndex, arow.lastUsedInternalIndex,
 				arow.lastReturnedExternalIndex, arow.lastReturnedInternalIndex,
-				arow.name, dbVersion)
+				arow.name, arow.acctType, dbVersion)
 			err = bucket.Put(k, serializeAccountRow(&row.dbAccountRow))
 			if err != nil {
 				str := "failed to delete account private key"
@@ -1446,8 +1516,13 @@ func createManagerNS(ns walletdb.ReadWriteBucket) error {
 		str := "failed to create a meta bucket"
 		return managerError(apperrors.ErrDatabase, str, err)
 	}
+	_, err = ns.CreateBucket(blissaddrIdxBucketName)
+	if err != nil {
+		str := "failed to create bliss address index bucket"
+		return managerError(apperrors.ErrDatabase, str, err)
+	}
 
-	if err := putLastAccount(ns, DefaultAccountNum); err != nil {
+	if err := PutLastAccount(ns, DefaultAccountNum); err != nil {
 		return err
 	}
 
@@ -1558,5 +1633,23 @@ func upgradeManager(ns walletdb.ReadWriteBucket) error {
 		return managerError(apperrors.ErrUpgrade, str, nil)
 	}
 
+	return nil
+}
+
+func PutChainedBlissAddress(ns walletdb.ReadWriteBucket, addr *dcrutil.AddressPubKeyHash, account uint32,
+	status syncStatus, branch, index uint32) error {
+	return putChainedAddress(ns, addr, account, status, branch, index)
+}
+
+func CreateBlissBucket(ns walletdb.ReadWriteBucket) error {
+	//_, err := ns.CreateBucketIfNotExists(blissaddrIdxBucketName)
+	bucket := ns.NestedReadBucket(blissaddrIdxBucketName)
+	if bucket == nil {
+		_, err := ns.CreateBucket(blissaddrIdxBucketName)
+		if err != nil {
+			str := "failed to create bliss address index bucket"
+			return managerError(apperrors.ErrDatabase, str, err)
+		}
+	}
 	return nil
 }

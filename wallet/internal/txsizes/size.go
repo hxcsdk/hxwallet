@@ -9,6 +9,7 @@ import (
 	"github.com/decred/dcrd/wire"
 
 	h "github.com/decred/dcrwallet/internal/helpers"
+	"github.com/decred/dcrwallet/wallet/udb"
 )
 
 // Worst case script and input/output size estimates.
@@ -23,6 +24,11 @@ const (
 	//   - 33 bytes serialized compressed pubkey
 	RedeemP2PKHSigScriptSize = 1 + 73 + 1 + 33
 
+	
+	RedeemP2PKHAltSigScriptSize = 3 + 751 + 3 + 897 + 1
+
+
+
 	// P2PKHPkScriptSize is the size of a transaction output script that
 	// pays to a compressed pubkey hash.  It is calculated as:
 	//
@@ -33,6 +39,8 @@ const (
 	//   - OP_EQUALVERIFY
 	//   - OP_CHECKSIG
 	P2PKHPkScriptSize = 1 + 1 + 1 + 20 + 1 + 1
+
+	P2PKHAltScriptSize = 1 + 1 + 1 + 20 + 1 + 1 + 1
 
 	// RedeemP2PKHInputSize is the worst case (largest) serialize size of a
 	// transaction input redeeming a compressed P2PKH output.  It is
@@ -49,6 +57,8 @@ const (
 	//   - 4 bytes sequence
 	RedeemP2PKHInputSize = 32 + 4 + 1 + 8 + 4 + 4 + 1 + RedeemP2PKHSigScriptSize + 4
 
+	RedeemP2PKHAltInputSize = 32 + 4 + 1 + 8 + 4 + 4 + 3 + RedeemP2PKHAltSigScriptSize + 4
+
 	// P2PKHOutputSize is the serialize size of a transaction output with a
 	// P2PKH output script.  It is calculated as:
 	//
@@ -57,24 +67,36 @@ const (
 	//   - 1 byte compact int encoding value 25
 	//   - 25 bytes P2PKH output script
 	P2PKHOutputSize = 8 + 2 + 1 + P2PKHPkScriptSize
+
+	P2PKHAltOutputSize = 8 + 2 + 1 + P2PKHAltScriptSize
 )
 
 // EstimateSerializeSize returns a worst case serialize size estimate for a
 // signed transaction that spends inputCount number of compressed P2PKH outputs
 // and contains each transaction output from txOuts.  The estimated size is
 // incremented for an additional P2PKH change output if addChangeOutput is true.
-func EstimateSerializeSize(inputCount int, txOuts []*wire.TxOut, addChangeOutput bool) int {
+func EstimateSerializeSize(inputCount int, txOuts []*wire.TxOut, addChangeOutput bool, accType uint8) int {
 	changeSize := 0
+	inputSize := 0
 	outputCount := len(txOuts)
 	if addChangeOutput {
-		changeSize = P2PKHOutputSize
+		if accType == udb.AcctypeEc {
+			changeSize = P2PKHOutputSize
+		} else if accType == udb.AcctypeBliss {
+			changeSize = P2PKHAltOutputSize
+		}
 		outputCount++
+	}
+	if accType == udb.AcctypeEc {
+		inputSize = RedeemP2PKHInputSize
+	}else if accType == udb.AcctypeBliss {
+		inputSize = RedeemP2PKHAltInputSize
 	}
 
 	// 12 additional bytes are for version, locktime and expiry.
 	return 12 + (2 * wire.VarIntSerializeSize(uint64(inputCount))) +
 		wire.VarIntSerializeSize(uint64(outputCount)) +
-		inputCount*RedeemP2PKHInputSize +
+		inputCount*inputSize +
 		h.SumOutputSerializeSizes(txOuts) +
 		changeSize
 }

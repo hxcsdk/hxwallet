@@ -16,5 +16,5 @@ import (
 // returned after the user has confirmed the seed has been backed up to a secure
 // location.
 func Setup(r *bufio.Reader) (privPass, pubPass, seed []byte, err error) {
-	return prompt.Setup(r, []byte(wallet.InsecurePubPassphrase), nil)
+	return prompt.Setup(r, []byte(wallet.InsecurePubPassphrase), []byte(""), nil)
 }

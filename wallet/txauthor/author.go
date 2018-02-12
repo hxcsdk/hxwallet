@@ -18,6 +18,7 @@ import (
 
 	h "github.com/decred/dcrwallet/internal/helpers"
 	"github.com/decred/dcrwallet/wallet/internal/txsizes"
+	"github.com/decred/dcrd/crypto/bliss"
 )
 
 const (
@@ -95,10 +96,10 @@ type ChangeSource func() ([]byte, uint16, error)
 //
 // BUGS: Fee estimation may be off when redeeming non-compressed P2PKH outputs.
 func NewUnsignedTransaction(outputs []*wire.TxOut, relayFeePerKb dcrutil.Amount,
-	fetchInputs InputSource, fetchChange ChangeSource) (*AuthoredTx, error) {
+	fetchInputs InputSource, fetchChange ChangeSource, accType uint8) (*AuthoredTx, error) {
 
 	targetAmount := h.SumOutputValues(outputs)
-	estimatedSize := txsizes.EstimateSerializeSize(1, outputs, true)
+	estimatedSize := txsizes.EstimateSerializeSize(1, outputs, true, accType)
 	targetFee := txrules.FeeForSerializeSize(relayFeePerKb, estimatedSize)
 
 	for {
@@ -110,7 +111,7 @@ func NewUnsignedTransaction(outputs []*wire.TxOut, relayFeePerKb dcrutil.Amount,
 			return nil, InsufficientFundsError{}
 		}
 
-		maxSignedSize := txsizes.EstimateSerializeSize(len(inputs), outputs, true)
+		maxSignedSize := txsizes.EstimateSerializeSize(len(inputs), outputs, true, accType)
 		maxRequiredFee := txrules.FeeForSerializeSize(relayFeePerKb, maxSignedSize)
 		remainingAmount := inputAmount - targetAmount
 		if remainingAmount < maxRequiredFee {
@@ -134,7 +135,7 @@ func NewUnsignedTransaction(outputs []*wire.TxOut, relayFeePerKb dcrutil.Amount,
 			if err != nil {
 				return nil, err
 			}
-			if len(changeScript) > txsizes.P2PKHPkScriptSize {
+			if len(changeScript) > txsizes.P2PKHPkScriptSize + 1 {
 				return nil, errors.New("fee estimation requires change " +
 					"scripts no larger than P2PKH output scripts")
 			}
@@ -149,7 +150,7 @@ func NewUnsignedTransaction(outputs []*wire.TxOut, relayFeePerKb dcrutil.Amount,
 		}
 
 		estSignedSize := txsizes.EstimateSerializeSize(len(unsignedTransaction.TxIn),
-			unsignedTransaction.TxOut, false)
+			unsignedTransaction.TxOut, false, accType)
 		return &AuthoredTx{
 			Tx:                           unsignedTransaction,
 			PrevScripts:                  scripts,
@@ -208,10 +209,15 @@ func AddAllInputScripts(tx *wire.MsgTx, prevPkScripts [][]byte, secrets SecretsS
 
 	for i := range inputs {
 		pkScript := prevPkScripts[i]
+		sigType := chainec.ECTypeSecp256k1
+		alType, _ := txscript.ExtractPkScriptAltSigType(pkScript)
+		if alType == int(bliss.BSTypeBliss) {
+			sigType = bliss.BSTypeBliss
+		}
 		sigScript := inputs[i].SignatureScript
 		script, err := txscript.SignTxOutput(chainParams, tx, i,
 			pkScript, txscript.SigHashAll, secrets, secrets,
-			sigScript, chainec.ECTypeSecp256k1)
+			sigScript, sigType)
 		if err != nil {
 			return err
 		}
