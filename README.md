@@ -1,6 +1,9 @@
 hxwallet
 =========
 
+[![Build Status](https://travis-ci.org/hybridnetwork/hxwallet.png?branch=dev-v0.0.1)](https://travis-ci.org/hybridnetwork/hxwallet)
+[![ISC License](http://img.shields.io/badge/license-ISC-blue.svg)](http://copyfree.org)
+
 hxwallet is a daemon handling hx wallet functionality for a
 single user.  It acts as both an RPC client to hxd and an RPC server
 for wallet clients and legacy RPC applications.
