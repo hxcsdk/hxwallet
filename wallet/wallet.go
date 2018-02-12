@@ -830,7 +830,7 @@ func (w *Wallet) loadActiveAddrs(dbtx walletdb.ReadTx, chainClient *chain.RPCCli
 				addrs := getAddrs()
 				stop := minUint32(n+1, child+256)
 				for ; child < stop; child++ {
-					var addr *hcashutil.AddressPubKeyHash
+					var addr *dcrutil.AddressPubKeyHash
 					err := walletdb.View(w.db, func(tx walletdb.ReadTx) error {
 						addrmgrNs := tx.ReadBucket(waddrmgrNamespaceKey)
 						var err error
