@@ -1,21 +1,21 @@
-dcrwallet
+hxwallet
 =========
 
-dcrwallet is a daemon handling decred wallet functionality for a
-single user.  It acts as both an RPC client to dcrd and an RPC server
+hxwallet is a daemon handling hx wallet functionality for a
+single user.  It acts as both an RPC client to hxd and an RPC server
 for wallet clients and legacy RPC applications.
 
 Public and private keys are derived using the hierarchical
 deterministic format described by
 [BIP0032](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki).
 Unencrypted private keys are not supported and are never written to
-disk.  dcrwallet uses the
+disk.  hxwallet uses the
 `m/44'/<coin type>'/<account>'/<branch>/<address index>`
 HD path for all derived addresses, as described by
 [BIP0044](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki).
 
 Due to the sensitive nature of public data in a BIP0032 wallet,
-dcrwallet provides the option of encrypting not just private keys, but
+hxwallet provides the option of encrypting not just private keys, but
 public data as well.  This is intended to thwart privacy risks where a
 wallet file is compromised without exposing all current and future
 addresses (public keys) managed by the wallet. While access to this
@@ -24,11 +24,11 @@ does mean they could track all transactions involving your addresses
 and therefore know your exact balance.  In a future release, public data
 encryption will extend to transactions as well.
 
-dcrwallet is not an SPV client and requires connecting to a local or
-remote dcrd instance for asynchronous blockchain queries and
-notifications over websockets.  Full dcrd installation instructions
-can be found [here](https://github.com/decred/dcrd).  An alternative
-SPV mode that is compatible with dcrd is planned for a future release.
+hxwallet is not an SPV client and requires connecting to a local or
+remote hxd instance for asynchronous blockchain queries and
+notifications over websockets.  Full hxd installation instructions
+can be found [here](https://github.com/hybridnetwork/hxd).  An alternative
+SPV mode that is compatible with hxd is planned for a future release.
 
 Wallet clients can use one of two RPC servers:
 
@@ -44,7 +44,7 @@ Wallet clients can use one of two RPC servers:
 
   2. A gRPC server
 
-     The gRPC server uses a new API built for dcrwallet, but the API is not
+     The gRPC server uses a new API built for hxwallet, but the API is not
      stabilized.  This server is enabled by default and may be disabled with
      the config option `--nogrpc`.  If you don't mind applications breaking
      due to API changes, don't want to deal with issues of the legacy API, or
@@ -57,7 +57,7 @@ Wallet clients can use one of two RPC servers:
 
 Install the latest MSIs available here:
 
-https://github.com/decred/decred-release/releases
+https://github.com/hybridnetwork/hx-release/releases
 
 ### Windows/Linux/BSD/POSIX - Build from source
 
@@ -87,8 +87,8 @@ For a first time installation, the project and dependency sources can be
 obtained manually with `git` and `glide` (create directories as needed):
 
 ```
-git clone https://github.com/decred/dcrwallet $GOPATH/src/github.com/decred/dcrwallet
-cd $GOPATH/src/github.com/decred/dcrwallet
+git clone https://github.com/hybridnetwork/hxwallet $GOPATH/src/github.com/hybridnetwork/hxwallet
+cd $GOPATH/src/github.com/hybridnetwork/hxwallet
 glide install
 ```
 
@@ -96,7 +96,7 @@ To update an existing source tree, pull the latest changes and install the
 matching dependencies:
 
 ```
-cd $GOPATH/src/github.com/decred/dcrwallet
+cd $GOPATH/src/github.com/hybridnetwork/hxwallet
 git pull
 glide install
 ```
@@ -104,10 +104,10 @@ glide install
 **Building/Installing**:
 
 The `go` tool is used to build or install (to `GOPATH`) the project.  Some
-example build instructions are provided below (all must run from the `dcrwallet`
+example build instructions are provided below (all must run from the `hxwallet`
 project directory).
 
-To build and install `dcrwallet` and all helper commands (in the `cmd`
+To build and install `hxwallet` and all helper commands (in the `cmd`
 directory) to `$GOPATH/bin/`, as well as installing all compiled packages to
 `$GOPATH/pkg/` (**use this if you are unsure which command to run**):
 
@@ -115,13 +115,13 @@ directory) to `$GOPATH/bin/`, as well as installing all compiled packages to
 go install . ./cmd/...
 ```
 
-To build a `dcrwallet` executable and install it to `$GOPATH/bin/`:
+To build a `hxwallet` executable and install it to `$GOPATH/bin/`:
 
 ```
 go install
 ```
 
-To build a `dcrwallet` executable and place it in the current directory:
+To build a `hxwallet` executable and place it in the current directory:
 
 ```
 go build
@@ -129,7 +129,7 @@ go build
 
 ## Docker
 
-All tests and linters may be run in a docker container using the script `run_tests.sh`.  This script defaults to using the current supported version of go.  You can run it with the major version of go you would like to use as the only arguement to test a previous on a previous version of go (generally decred supports the current version of go and the previous one).
+All tests and linters may be run in a docker container using the script `run_tests.sh`.  This script defaults to using the current supported version of go.  You can run it with the major version of go you would like to use as the only arguement to test a previous on a previous version of go (generally hx supports the current version of go and the previous one).
 
 ```
 ./run_tests.sh 1.7
@@ -143,61 +143,61 @@ To run the tests locally without docker:
 
 ## Getting Started
 
-The following instructions detail how to get started with dcrwallet connecting
-to a localhost dcrd.  Commands should be run in `cmd.exe` or PowerShell on
+The following instructions detail how to get started with hxwallet connecting
+to a localhost hxd.  Commands should be run in `cmd.exe` or PowerShell on
 Windows, or any terminal emulator on *nix.
 
-- Run the following command to start dcrd:
+- Run the following command to start hxd:
 
 ```
-dcrd -u rpcuser -P rpcpass
+hxd -u rpcuser -P rpcpass
 ```
 
 - Run the following command to create a wallet:
 
 ```
-dcrwallet -u rpcuser -P rpcpass --create
+hxwallet -u rpcuser -P rpcpass --create
 ```
 
-- Run the following command to start dcrwallet:
+- Run the following command to start hxwallet:
 
 ```
-dcrwallet -u rpcuser -P rpcpass
+hxwallet -u rpcuser -P rpcpass
 ```
 
 If everything appears to be working, it is recommended at this point to
-copy the sample dcrd and dcrwallet configurations and update with your
+copy the sample hxd and hxwallet configurations and update with your
 RPC username and password.
 
 PowerShell (Installed from MSI):
 ```
-PS> cp "$env:ProgramFiles\Decred\Dcrd\sample-dcrd.conf" $env:LOCALAPPDATA\Dcrd\dcrd.conf
-PS> cp "$env:ProgramFiles\Decred\Dcrwallet\sample-dcrwallet.conf" $env:LOCALAPPDATA\Dcrwallet\dcrwallet.conf
-PS> $editor $env:LOCALAPPDATA\Dcrd\dcrd.conf
-PS> $editor $env:LOCALAPPDATA\Dcrwallet\dcrwallet.conf
+PS> cp "$env:ProgramFiles\Hybridnetwork\Hxd\sample-hxd.conf" $env:LOCALAPPDATA\Hxd\hxd.conf
+PS> cp "$env:ProgramFiles\Hybridnetwork\Hxwallet\sample-hxwallet.conf" $env:LOCALAPPDATA\Hxwallet\hxwallet.conf
+PS> $editor $env:LOCALAPPDATA\Hxd\hxd.conf
+PS> $editor $env:LOCALAPPDATA\Hxwallet\hxwallet.conf
 ```
 
 PowerShell (Installed from source):
 ```
-PS> cp $env:GOPATH\src\github.com\decred\dcrd\sample-dcrd.conf $env:LOCALAPPDATA\Dcrd\dcrd.conf
-PS> cp $env:GOPATH\src\github.com\decred\dcrwallet\sample-dcrwallet.conf $env:LOCALAPPDATA\Dcrwallet\dcrwallet.conf
-PS> $editor $env:LOCALAPPDATA\Dcrd\dcrd.conf
-PS> $editor $env:LOCALAPPDATA\Dcrwallet\dcrwallet.conf
+PS> cp $env:GOPATH\src\github.com\hybridnetwork\hxd\sample-hxd.conf $env:LOCALAPPDATA\Hxd\hxd.conf
+PS> cp $env:GOPATH\src\github.com\hybridnetwork\hxwallet\sample-hxwallet.conf $env:LOCALAPPDATA\Hxwallet\hxwallet.conf
+PS> $editor $env:LOCALAPPDATA\Hxd\hxd.conf
+PS> $editor $env:LOCALAPPDATA\Hxwallet\hxwallet.conf
 ```
 
 Linux/BSD/POSIX (Installed from source):
 ```bash
-$ cp $GOPATH/src/github.com/decred/dcrd/sample-dcrd.conf ~/.dcrd/dcrd.conf
-$ cp $GOPATH/src/github.com/decred/dcrwallet/sample-dcrwallet.conf ~/.dcrwallet/dcrwallet.conf
-$ $EDITOR ~/.dcrd/dcrd.conf
-$ $EDITOR ~/.dcrwallet/dcrwallet.conf
+$ cp $GOPATH/src/github.com/hybridnetwork/hxd/sample-hxd.conf ~/.hxd/hxd.conf
+$ cp $GOPATH/src/github.com/hybridnetwork/hxwallet/sample-hxwallet.conf ~/.hxwallet/hxwallet.conf
+$ $EDITOR ~/.hxd/hxd.conf
+$ $EDITOR ~/.hxwallet/hxwallet.conf
 ```
 
 ## Issue Tracker
 
-The [integrated github issue tracker](https://github.com/decred/dcrwallet/issues)
+The [integrated github issue tracker](https://github.com/hybridnetwork/hxwallet/issues)
 is used for this project.
 
 ## License
 
-dcrwallet is licensed under the liberal ISC License.
+hxwallet is licensed under the liberal ISC License.
