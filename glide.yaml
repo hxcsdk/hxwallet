@@ -8,7 +8,7 @@ import:
   version: master
 - package: github.com/decred/dcrd
   repo: git@github.com:hybridnetwork/hxd
-  version: bogrod-pqdev
+  version: dev-v0.0.1
   subpackages:
   - blockchain
   - blockchain/stake
