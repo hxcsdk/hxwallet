@@ -224,7 +224,8 @@ func (w *Wallet) nextAddress(persist persistReturnedChildFunc, accountinfo *udb.
 							return err
 						}
 						for i := uint32(1); i <= gapLimit; i++ {
-							addrpriv, err := branchpriv.Child(alb.lastUsed + i + alb.cursor + gapLimit)
+							childIndex := alb.lastUsed + i + alb.cursor
+							addrpriv, err := branchpriv.Child(childIndex)
 							if err != nil {
 								return err
 							}
@@ -282,7 +283,7 @@ func (w *Wallet) nextAddress(persist persistReturnedChildFunc, accountinfo *udb.
 				if err != nil {
 					return err
 				}
-				addrpriv, err := branchpriv.Child(childIndex + gapLimit)
+				addrpriv, err := branchpriv.Child(childIndex)
 				if err != nil {
 					return err
 				}
@@ -308,7 +309,7 @@ func (w *Wallet) nextAddress(persist persistReturnedChildFunc, accountinfo *udb.
 			if accountinfo.AccountType == udb.AcctypeBliss {
 				err := walletdb.Update(w.db, func(tx walletdb.ReadWriteTx) error {
 					addrmgrNs := tx.ReadWriteBucket(waddrmgrNamespaceKey)
-					err = udb.PutChainedBlissAddress(addrmgrNs, addr, accountinfo.AccountNumber, udb.SSFull, branch, childIndex+gapLimit)
+					err = udb.PutChainedBlissAddress(addrmgrNs, addr, accountinfo.AccountNumber, udb.SSFull, branch, childIndex)
 					if err != nil {
 						return err
 					}

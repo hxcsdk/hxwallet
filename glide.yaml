@@ -53,5 +53,5 @@ import:
   version: master
   subpackages:
   - rotator
-- package: github.com/LoCCS/bliss
+- package: github.com/hybridnetwork/bliss
 - package: github.com/dchest/blake256
