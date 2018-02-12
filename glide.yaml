@@ -53,11 +53,8 @@ import:
   version: master
   subpackages:
   - rotator
-<<<<<<< HEAD
 - package: golang.org/x/sync
   subpackages:
   - errgroup
-=======
 - package: github.com/hybridnetwork/bliss
 - package: github.com/dchest/blake256
->>>>>>> bogrod-pqdev

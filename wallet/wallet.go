@@ -911,14 +911,6 @@ func (w *Wallet) loadActiveAddrs(dbtx walletdb.ReadTx, chainClient *chain.RPCCli
 		// pre-cache the pubkey results so concurrent access does not race.
 		extKey.ECPubKey()
 		intKey.ECPubKey()
-<<<<<<< HEAD
-		go loadBranchAddrs(extKey, extn, errs)
-		go loadBranchAddrs(intKey, intn, errs)
-		// loadBranchAddrs loads addresses through extn/intn, and the actual
-		// number of watched addresses is one more for each branch due to zero
-		// indexing.
-		bip0044AddrCount += uint64(extn) + uint64(intn) + 2
-=======
 		if extKey.GetAlgType() == udb.AcctypeEc {
 			go loadBranchAddrs(extKey, extn, errs)
 			go loadBranchAddrs(intKey, intn, errs)
@@ -932,8 +924,7 @@ func (w *Wallet) loadActiveAddrs(dbtx walletdb.ReadTx, chainClient *chain.RPCCli
 		// loadBranchAddrs loads addresses through extn/intn, and the actual
 		// number of watched addresses is one more for each branch due to zero
 		// indexing.
-		bip0044AddrCount += uint64(extn) + uint64(intn)
->>>>>>> bogrod-pqdev
+		bip0044AddrCount += uint64(extn) + uint64(intn) + 2
 	}
 	go func() {
 		// Imported addresses are still sent as a single slice for now.  Could
