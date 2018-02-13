@@ -3005,7 +3005,7 @@ func validateAddress(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
-		if bytes.Equal([]byte(result.Address[0:2]), []byte("Hb")) {
+		if len(pubKeyBytes) == 897 {
 			pubKeyAddr, err := dcrutil.NewAddressBlissPubKey(pubKeyBytes,
 				w.ChainParams())
 			if err != nil {
