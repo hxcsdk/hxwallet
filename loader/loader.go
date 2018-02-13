@@ -10,13 +10,13 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/decred/dcrd/chaincfg"
-	"github.com/decred/dcrrpcclient"
-	"github.com/decred/dcrutil"
-	"github.com/decred/dcrwallet/ticketbuyer"
-	"github.com/decred/dcrwallet/wallet"
-	"github.com/decred/dcrwallet/walletdb"
-	_ "github.com/decred/dcrwallet/walletdb/bdb" // driver loaded during init
+	"github.com/hybridnetwork/hxd/chaincfg"
+	dcrrpcclient "github.com/hybridnetwork/hxrpcclient"
+	dcrutil "github.com/hybridnetwork/hxutil"
+	"github.com/hybridnetwork/hxwallet/ticketbuyer"
+	"github.com/hybridnetwork/hxwallet/wallet"
+	"github.com/hybridnetwork/hxwallet/walletdb"
+	_ "github.com/hybridnetwork/hxwallet/walletdb/bdb" // driver loaded during init
 )
 
 const (

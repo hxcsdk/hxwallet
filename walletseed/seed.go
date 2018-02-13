@@ -11,8 +11,8 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/decred/dcrutil/hdkeychain"
-	"github.com/decred/dcrwallet/pgpwordlist"
+	"github.com/hybridnetwork/hxutil/hdkeychain"
+	"github.com/hybridnetwork/hxwallet/pgpwordlist"
 )
 
 // GenerateRandomSeed returns a new seed created from a cryptographically-secure

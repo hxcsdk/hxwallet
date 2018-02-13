@@ -10,16 +10,16 @@ import (
 	"context"
 	"sync"
 
-	"github.com/decred/dcrd/blockchain"
-	"github.com/decred/dcrd/blockchain/stake"
-	"github.com/decred/dcrd/chaincfg/chainhash"
-	"github.com/decred/dcrd/txscript"
-	"github.com/decred/dcrd/wire"
-	"github.com/decred/dcrutil"
-	"github.com/decred/dcrutil/hdkeychain"
-	"github.com/decred/dcrwallet/apperrors"
-	"github.com/decred/dcrwallet/wallet/udb"
-	"github.com/decred/dcrwallet/walletdb"
+	"github.com/hybridnetwork/hxd/blockchain"
+	"github.com/hybridnetwork/hxd/blockchain/stake"
+	"github.com/hybridnetwork/hxd/chaincfg/chainhash"
+	"github.com/hybridnetwork/hxd/txscript"
+	"github.com/hybridnetwork/hxd/wire"
+	dcrutil "github.com/hybridnetwork/hxutil"
+	"github.com/hybridnetwork/hxutil/hdkeychain"
+	"github.com/hybridnetwork/hxwallet/apperrors"
+	"github.com/hybridnetwork/hxwallet/wallet/udb"
+	"github.com/hybridnetwork/hxwallet/walletdb"
 )
 
 // TODO: It would be good to send errors during notification creation to the rpc

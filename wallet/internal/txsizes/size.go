@@ -6,10 +6,10 @@
 package txsizes
 
 import (
-	"github.com/decred/dcrd/wire"
+	"github.com/hybridnetwork/hxd/wire"
 
-	h "github.com/decred/dcrwallet/internal/helpers"
-	"github.com/decred/dcrwallet/wallet/udb"
+	h "github.com/hybridnetwork/hxwallet/internal/helpers"
+	"github.com/hybridnetwork/hxwallet/wallet/udb"
 )
 
 // Worst case script and input/output size estimates.

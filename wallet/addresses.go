@@ -7,14 +7,14 @@ package wallet
 import (
 	"fmt"
 
-	"github.com/decred/dcrd/chaincfg"
-	"github.com/decred/dcrd/txscript"
-	"github.com/decred/dcrutil"
-	"github.com/decred/dcrutil/hdkeychain"
-	"github.com/decred/dcrwallet/apperrors"
-	"github.com/decred/dcrwallet/wallet/txauthor"
-	"github.com/decred/dcrwallet/wallet/udb"
-	"github.com/decred/dcrwallet/walletdb"
+	"github.com/hybridnetwork/hxd/chaincfg"
+	"github.com/hybridnetwork/hxd/txscript"
+	dcrutil "github.com/hybridnetwork/hxutil"
+	"github.com/hybridnetwork/hxutil/hdkeychain"
+	"github.com/hybridnetwork/hxwallet/apperrors"
+	"github.com/hybridnetwork/hxwallet/wallet/txauthor"
+	"github.com/hybridnetwork/hxwallet/wallet/udb"
+	"github.com/hybridnetwork/hxwallet/walletdb"
 )
 
 // DefaultGapLimit is the default unused address gap limit defined by BIP0044.

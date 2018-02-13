@@ -8,10 +8,10 @@ package udb
 import (
 	"encoding/hex"
 
-	"github.com/decred/dcrd/chaincfg/chainec"
-	"github.com/decred/dcrutil"
-	"github.com/decred/dcrutil/hdkeychain"
-	"github.com/decred/dcrwallet/apperrors"
+	"github.com/hybridnetwork/hxd/chaincfg/chainec"
+	dcrutil "github.com/hybridnetwork/hxutil"
+	"github.com/hybridnetwork/hxutil/hdkeychain"
+	"github.com/hybridnetwork/hxwallet/apperrors"
 )
 
 // ManagedAddress is an interface that provides acces to information regarding

@@ -16,12 +16,12 @@ import (
 	"testing"
 
 	"github.com/boltdb/bolt"
-	"github.com/decred/dcrd/chaincfg"
-	"github.com/decred/dcrd/chaincfg/chainhash"
-	"github.com/decred/dcrd/wire"
-	"github.com/decred/dcrwallet/apperrors"
-	"github.com/decred/dcrwallet/walletdb"
-	_ "github.com/decred/dcrwallet/walletdb/bdb"
+	"github.com/hybridnetwork/hxd/chaincfg"
+	"github.com/hybridnetwork/hxd/chaincfg/chainhash"
+	"github.com/hybridnetwork/hxd/wire"
+	"github.com/hybridnetwork/hxwallet/apperrors"
+	"github.com/hybridnetwork/hxwallet/walletdb"
+	_ "github.com/hybridnetwork/hxwallet/walletdb/bdb"
 )
 
 var (

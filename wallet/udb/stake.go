@@ -10,15 +10,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/decred/dcrd/blockchain/stake"
-	"github.com/decred/dcrd/chaincfg"
-	"github.com/decred/dcrd/chaincfg/chainec"
-	"github.com/decred/dcrd/chaincfg/chainhash"
-	"github.com/decred/dcrd/wire"
-	"github.com/decred/dcrutil"
-	"github.com/decred/dcrwallet/apperrors"
-	walletchain "github.com/decred/dcrwallet/chain"
-	"github.com/decred/dcrwallet/walletdb"
+	"github.com/hybridnetwork/hxd/blockchain/stake"
+	"github.com/hybridnetwork/hxd/chaincfg"
+	"github.com/hybridnetwork/hxd/chaincfg/chainec"
+	"github.com/hybridnetwork/hxd/chaincfg/chainhash"
+	"github.com/hybridnetwork/hxd/wire"
+	dcrutil "github.com/hybridnetwork/hxutil"
+	"github.com/hybridnetwork/hxwallet/apperrors"
+	walletchain "github.com/hybridnetwork/hxwallet/chain"
+	"github.com/hybridnetwork/hxwallet/walletdb"
 )
 
 func stakeStoreError(code apperrors.Code, str string, err error) error {

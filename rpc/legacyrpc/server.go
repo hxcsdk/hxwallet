@@ -21,10 +21,10 @@ import (
 	"time"
 
 	"github.com/btcsuite/websocket"
-	"github.com/decred/dcrd/chaincfg"
-	"github.com/decred/dcrd/dcrjson"
-	"github.com/decred/dcrwallet/chain"
-	"github.com/decred/dcrwallet/loader"
+	"github.com/hybridnetwork/hxd/chaincfg"
+	"github.com/hybridnetwork/hxd/dcrjson"
+	"github.com/hybridnetwork/hxwallet/chain"
+	"github.com/hybridnetwork/hxwallet/loader"
 )
 
 type websocketClient struct {

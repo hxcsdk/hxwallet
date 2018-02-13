@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/decred/dcrd/wire"
-	"github.com/decred/dcrutil"
-	"github.com/decred/dcrwallet/walletdb"
-	_ "github.com/decred/dcrwallet/walletdb/bdb"
+	"github.com/hybridnetwork/hxd/wire"
+	dcrutil "github.com/hybridnetwork/hxutil"
+	"github.com/hybridnetwork/hxwallet/walletdb"
+	_ "github.com/hybridnetwork/hxwallet/walletdb/bdb"
 )
 
 func TestStakeInvalidationOfTip(t *testing.T) {

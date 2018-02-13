@@ -1,12 +1,12 @@
-package: github.com/decred/dcrwallet
+package: github.com/hybridnetwork/hxwallet
 import:
 - package: github.com/btcsuite/btclog
   version: master
 - package: github.com/btcsuite/websocket
   version: master
-- package: github.com/decred/bitset
+- package: github.com/hybridnetwork/bitset
   version: master
-- package: github.com/decred/dcrd
+- package: github.com/hybridnetwork/hxd
   repo: git@github.com:hybridnetwork/hxd
   version: dev-v0.0.1
   subpackages:
@@ -18,12 +18,12 @@ import:
   - dcrjson
   - txscript
   - wire
-- package: github.com/decred/dcrrpcclient
+- package: github.com/hybridnetwork/hxrpcclient
   repo: git@github.com:hybridnetwork/hxrpcclient
-  version: bogrod-pqdev
-- package: github.com/decred/dcrutil
+  version: dev-v0.0.1
+- package: github.com/hybridnetwork/hxutil
   repo: git@github.com:hybridnetwork/hxutil
-  version: bogrod-pqdev
+  version: dev-v0.0.1
   subpackages:
   - hdkeychain
 - package: github.com/golang/protobuf

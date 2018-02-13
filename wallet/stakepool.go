@@ -7,9 +7,9 @@ package wallet
 import (
 	"errors"
 
-	"github.com/decred/dcrutil"
-	"github.com/decred/dcrwallet/wallet/udb"
-	"github.com/decred/dcrwallet/walletdb"
+	dcrutil "github.com/hybridnetwork/hxutil"
+	"github.com/hybridnetwork/hxwallet/wallet/udb"
+	"github.com/hybridnetwork/hxwallet/walletdb"
 )
 
 // StakePoolUserInfo returns the stake pool user information for a user

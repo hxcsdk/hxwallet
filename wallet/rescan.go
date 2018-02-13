@@ -8,10 +8,10 @@ package wallet
 import (
 	"encoding/hex"
 
-	"github.com/decred/dcrd/chaincfg/chainhash"
-	"github.com/decred/dcrwallet/chain"
-	"github.com/decred/dcrwallet/wallet/udb"
-	"github.com/decred/dcrwallet/walletdb"
+	"github.com/hybridnetwork/hxd/chaincfg/chainhash"
+	"github.com/hybridnetwork/hxwallet/chain"
+	"github.com/hybridnetwork/hxwallet/wallet/udb"
+	"github.com/hybridnetwork/hxwallet/walletdb"
 )
 
 const maxBlocksPerRescan = 2000

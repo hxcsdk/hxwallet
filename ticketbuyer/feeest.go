@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/decred/dcrutil"
+	dcrutil "github.com/hybridnetwork/hxutil"
 )
 
 const (

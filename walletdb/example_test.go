@@ -14,8 +14,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/decred/dcrwallet/walletdb"
-	_ "github.com/decred/dcrwallet/walletdb/bdb"
+	"github.com/hybridnetwork/hxwallet/walletdb"
+	_ "github.com/hybridnetwork/hxwallet/walletdb/bdb"
 )
 
 // This example demonstrates creating a new database.

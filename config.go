@@ -16,12 +16,12 @@ import (
 	"strings"
 
 	"github.com/btcsuite/btclog"
-	"github.com/decred/dcrutil"
-	"github.com/decred/dcrwallet/internal/cfgutil"
-	"github.com/decred/dcrwallet/netparams"
-	"github.com/decred/dcrwallet/ticketbuyer"
-	"github.com/decred/dcrwallet/wallet"
-	"github.com/decred/dcrwallet/wallet/txrules"
+	dcrutil "github.com/hybridnetwork/hxutil"
+	"github.com/hybridnetwork/hxwallet/internal/cfgutil"
+	"github.com/hybridnetwork/hxwallet/netparams"
+	"github.com/hybridnetwork/hxwallet/ticketbuyer"
+	"github.com/hybridnetwork/hxwallet/wallet"
+	"github.com/hybridnetwork/hxwallet/wallet/txrules"
 	flags "github.com/jessevdk/go-flags"
 )
 

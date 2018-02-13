@@ -7,13 +7,13 @@ package udb
 import (
 	"crypto/sha256"
 
-	"github.com/decred/dcrd/blockchain/stake"
-	"github.com/decred/dcrd/chaincfg"
-	"github.com/decred/dcrd/chaincfg/chainhash"
-	"github.com/decred/dcrutil/hdkeychain"
-	"github.com/decred/dcrwallet/apperrors"
-	"github.com/decred/dcrwallet/snacl"
-	"github.com/decred/dcrwallet/walletdb"
+	"github.com/hybridnetwork/hxd/blockchain/stake"
+	"github.com/hybridnetwork/hxd/chaincfg"
+	"github.com/hybridnetwork/hxd/chaincfg/chainhash"
+	"github.com/hybridnetwork/hxutil/hdkeychain"
+	"github.com/hybridnetwork/hxwallet/apperrors"
+	"github.com/hybridnetwork/hxwallet/snacl"
+	"github.com/hybridnetwork/hxwallet/walletdb"
 )
 
 // Note: all manager functions always use the latest version of the database.

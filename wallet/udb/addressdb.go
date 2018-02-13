@@ -11,9 +11,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/decred/dcrutil"
-	"github.com/decred/dcrwallet/apperrors"
-	"github.com/decred/dcrwallet/walletdb"
+	dcrutil "github.com/hybridnetwork/hxutil"
+	"github.com/hybridnetwork/hxwallet/apperrors"
+	"github.com/hybridnetwork/hxwallet/walletdb"
 )
 
 var (

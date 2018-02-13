@@ -18,10 +18,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/decred/dcrutil"
-	"github.com/decred/dcrwallet/loader"
-	"github.com/decred/dcrwallet/rpc/legacyrpc"
-	"github.com/decred/dcrwallet/rpc/rpcserver"
+	dcrutil "github.com/hybridnetwork/hxutil"
+	"github.com/hybridnetwork/hxwallet/loader"
+	"github.com/hybridnetwork/hxwallet/rpc/legacyrpc"
+	"github.com/hybridnetwork/hxwallet/rpc/rpcserver"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"

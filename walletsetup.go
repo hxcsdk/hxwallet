@@ -13,15 +13,15 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/decred/dcrd/chaincfg"
-	"github.com/decred/dcrd/wire"
-	"github.com/decred/dcrutil/hdkeychain"
-	"github.com/decred/dcrwallet/internal/prompt"
-	"github.com/decred/dcrwallet/loader"
-	"github.com/decred/dcrwallet/wallet"
-	"github.com/decred/dcrwallet/walletdb"
-	_ "github.com/decred/dcrwallet/walletdb/bdb"
-	"github.com/decred/dcrwallet/walletseed"
+	"github.com/hybridnetwork/hxd/chaincfg"
+	"github.com/hybridnetwork/hxd/wire"
+	"github.com/hybridnetwork/hxutil/hdkeychain"
+	"github.com/hybridnetwork/hxwallet/internal/prompt"
+	"github.com/hybridnetwork/hxwallet/loader"
+	"github.com/hybridnetwork/hxwallet/wallet"
+	"github.com/hybridnetwork/hxwallet/walletdb"
+	_ "github.com/hybridnetwork/hxwallet/walletdb/bdb"
+	"github.com/hybridnetwork/hxwallet/walletseed"
 )
 
 // networkDir returns the directory name of a network directory to hold wallet

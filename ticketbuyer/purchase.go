@@ -7,7 +7,7 @@ package ticketbuyer
 import (
 	"sync"
 
-	"github.com/decred/dcrwallet/wallet"
+	"github.com/hybridnetwork/hxwallet/wallet"
 )
 
 // PurchaseManager is the main handler of websocket notifications to

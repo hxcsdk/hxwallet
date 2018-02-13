@@ -8,9 +8,9 @@ package txrules
 import (
 	"errors"
 
-	"github.com/decred/dcrd/txscript"
-	"github.com/decred/dcrd/wire"
-	"github.com/decred/dcrutil"
+	"github.com/hybridnetwork/hxd/txscript"
+	"github.com/hybridnetwork/hxd/wire"
+	dcrutil "github.com/hybridnetwork/hxutil"
 )
 
 // DefaultRelayFeePerKb is the default minimum relay fee policy for a mempool.

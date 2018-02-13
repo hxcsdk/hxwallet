@@ -5,7 +5,7 @@
 
 package cfgutil
 
-import "github.com/decred/dcrutil"
+import dcrutil "github.com/hybridnetwork/hxutil"
 
 // AddressFlag embeds a dcrutil.Address and implements the flags.Marshaler and
 // Unmarshaler interfaces so it can be used as a config struct field.

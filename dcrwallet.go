@@ -17,14 +17,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/decred/dcrd/chaincfg"
-	"github.com/decred/dcrwallet/chain"
-	"github.com/decred/dcrwallet/internal/prompt"
-	"github.com/decred/dcrwallet/internal/zero"
-	ldr "github.com/decred/dcrwallet/loader"
-	"github.com/decred/dcrwallet/rpc/legacyrpc"
-	"github.com/decred/dcrwallet/rpc/rpcserver"
-	"github.com/decred/dcrwallet/wallet"
+	"github.com/hybridnetwork/hxd/chaincfg"
+	"github.com/hybridnetwork/hxwallet/chain"
+	"github.com/hybridnetwork/hxwallet/internal/prompt"
+	"github.com/hybridnetwork/hxwallet/internal/zero"
+	ldr "github.com/hybridnetwork/hxwallet/loader"
+	"github.com/hybridnetwork/hxwallet/rpc/legacyrpc"
+	"github.com/hybridnetwork/hxwallet/rpc/rpcserver"
+	"github.com/hybridnetwork/hxwallet/wallet"
 )
 
 var (

@@ -9,16 +9,16 @@ package txauthor
 import (
 	"errors"
 
-	"github.com/decred/dcrd/chaincfg"
-	"github.com/decred/dcrd/chaincfg/chainec"
-	"github.com/decred/dcrd/txscript"
-	"github.com/decred/dcrd/wire"
-	"github.com/decred/dcrutil"
-	"github.com/decred/dcrwallet/wallet/txrules"
+	"github.com/hybridnetwork/hxd/chaincfg"
+	"github.com/hybridnetwork/hxd/chaincfg/chainec"
+	"github.com/hybridnetwork/hxd/txscript"
+	"github.com/hybridnetwork/hxd/wire"
+	dcrutil "github.com/hybridnetwork/hxutil"
+	"github.com/hybridnetwork/hxwallet/wallet/txrules"
 
-	h "github.com/decred/dcrwallet/internal/helpers"
-	"github.com/decred/dcrwallet/wallet/internal/txsizes"
-	"github.com/decred/dcrd/crypto/bliss"
+	h "github.com/hybridnetwork/hxwallet/internal/helpers"
+	"github.com/hybridnetwork/hxwallet/wallet/internal/txsizes"
+	"github.com/hybridnetwork/hxd/crypto/bliss"
 )
 
 const (

@@ -8,7 +8,7 @@ package zero_test
 import (
 	"testing"
 
-	. "github.com/decred/dcrwallet/internal/zero"
+	. "github.com/hybridnetwork/hxwallet/internal/zero"
 )
 
 var (
