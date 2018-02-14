@@ -21,13 +21,12 @@ import (
 	"github.com/hybridnetwork/hxwallet/netparams"
 	"github.com/hybridnetwork/hxwallet/wallet/txauthor"
 	"github.com/hybridnetwork/hxwallet/wallet/txrules"
-	"github.com/jessevdk/go-flags"
-	"golang.org/x/crypto/ssh/terminal"
 	"github.com/hybridnetwork/hxwallet/wallet/udb"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 var (
-	walletDataDirectory = dcrutil.AppDataDir("dcrwallet", false)
+	walletDataDirectory = dcrutil.AppDataDir("hxwallet", false)
 	newlineBytes        = []byte{'\n'}
 )
 
