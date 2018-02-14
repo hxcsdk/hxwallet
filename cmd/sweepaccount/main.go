@@ -22,6 +22,7 @@ import (
 	"github.com/hybridnetwork/hxwallet/wallet/txauthor"
 	"github.com/hybridnetwork/hxwallet/wallet/txrules"
 	"github.com/hybridnetwork/hxwallet/wallet/udb"
+	"github.com/jessevdk/go-flags"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
