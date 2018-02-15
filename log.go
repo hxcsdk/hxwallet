@@ -50,7 +50,7 @@ var (
 	// application shutdown.
 	logRotator *rotator.Rotator
 
-	log          = backendLog.Logger("DCRW")
+	log          = backendLog.Logger("HXW")
 	loaderLog    = backendLog.Logger("LODR")
 	walletLog    = backendLog.Logger("WLLT")
 	tkbyLog      = backendLog.Logger("TKBY")
@@ -73,7 +73,7 @@ func init() {
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.
 var subsystemLoggers = map[string]btclog.Logger{
-	"DCRW": log,
+	"HXW": log,
 	"LODR": loaderLog,
 	"WLLT": walletLog,
 	"TKBY": tkbyLog,
