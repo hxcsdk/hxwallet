@@ -7,7 +7,6 @@ import:
 - package: github.com/hybridnetwork/bitset
   version: master
 - package: github.com/hybridnetwork/hxd
-  repo: git@github.com:hybridnetwork/hxd
   version: dev-v0.0.1
   subpackages:
   - blockchain
@@ -19,10 +18,8 @@ import:
   - txscript
   - wire
 - package: github.com/hybridnetwork/hxrpcclient
-  repo: git@github.com:hybridnetwork/hxrpcclient
   version: dev-v0.0.1
 - package: github.com/hybridnetwork/hxutil
-  repo: git@github.com:hybridnetwork/hxutil
   version: dev-v0.0.1
   subpackages:
   - hdkeychain
