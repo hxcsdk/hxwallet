@@ -22,7 +22,7 @@ const MaxAccountForTestNet = 16
 type result struct {
 	used    bool
 	account uint32
-	acctype uint8
+	acctype uint32
 	err     error
 }
 
@@ -255,7 +255,7 @@ Bsearch:
 	return lastRecorded, lastUsed, requestAccount, havebliss, nil
 }
 
-func (w *Wallet) newAcctAndUsed(client *dcrrpcclient.Client, coinTypeXpriv *hdkeychain.ExtendedKey, account uint32, acctype uint8) (bool, error) {
+func (w *Wallet) newAcctAndUsed(client *dcrrpcclient.Client, coinTypeXpriv *hdkeychain.ExtendedKey, account uint32, acctype uint32) (bool, error) {
 	xpriv, err := coinTypeXpriv.SwitchChild(hdkeychain.HardenedKeyStart+account, acctype)
 	if err != nil {
 		return false, err

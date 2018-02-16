@@ -2033,7 +2033,7 @@ const maxEmptyAccounts = 100
 // restoring, new accounts may not be created when all of the previous 100
 // accounts have no transaction history (this is a deviation from the BIP0044
 // spec, which allows no unused account gaps).
-func (w *Wallet) NextAccount(name string, actype uint8) (uint32, error) {
+func (w *Wallet) NextAccount(name string, actype uint32) (uint32, error) {
 	var account uint32
 	var props *udb.AccountProperties
 	var xpub, xpriv *hdkeychain.ExtendedKey

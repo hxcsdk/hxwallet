@@ -24,7 +24,7 @@ const (
 	//   - 33 bytes serialized compressed pubkey
 	RedeemP2PKHSigScriptSize = 1 + 73 + 1 + 33
 
-	
+
 	RedeemP2PKHAltSigScriptSize = 3 + 751 + 3 + 897 + 1
 
 
@@ -75,7 +75,7 @@ const (
 // signed transaction that spends inputCount number of compressed P2PKH outputs
 // and contains each transaction output from txOuts.  The estimated size is
 // incremented for an additional P2PKH change output if addChangeOutput is true.
-func EstimateSerializeSize(inputCount int, txOuts []*wire.TxOut, addChangeOutput bool, accType uint8) int {
+func EstimateSerializeSize(inputCount int, txOuts []*wire.TxOut, addChangeOutput bool, accType uint32) int {
 	changeSize := 0
 	inputSize := 0
 	outputCount := len(txOuts)

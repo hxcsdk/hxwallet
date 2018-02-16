@@ -55,7 +55,7 @@ const (
 )
 
 // addressType represents a type of address stored in the database.
-type addressType uint8
+type addressType uint32
 
 // These constants define the various supported address types.
 const (
@@ -65,18 +65,18 @@ const (
 )
 
 // accountType represents a type of address stored in the database.
-type accountType uint8
+type accountType uint32
 
 // These constants define the various supported account types.
 const (
-	actBIP0044 uint8 = 0 // not iota as they need to be stable for db
-	actBliss   uint8 = 1
-	actMSS     uint8 = 2
+	actBIP0044 uint32 = 0 // not iota as they need to be stable for db
+	actBliss   uint32 = 1
+	actMSS     uint32 = 2
 )
 
 // dbAccountRow houses information stored about an account in the database.
 type dbAccountRow struct {
-	acctType uint8
+	acctType uint32
 	rawData  []byte // Varies based on account type field.
 }
 
@@ -119,7 +119,7 @@ type dbImportedAddressRow struct {
 	dbAddressRow
 	encryptedPubKey  []byte
 	encryptedPrivKey []byte
-	algType          uint8
+	algType          uint32
 }
 
 // dbImportedAddressRow houses additional information stored about a script
@@ -480,7 +480,7 @@ func deserializeAccountRow(accountID []byte, serializedAccount []byte) (*dbAccou
 	}
 
 	row := dbAccountRow{}
-	row.acctType = uint8(serializedAccount[0])
+	row.acctType = uint32(serializedAccount[0])
 	rdlen := binary.LittleEndian.Uint32(serializedAccount[1:5])
 	row.rawData = make([]byte, rdlen)
 	copy(row.rawData, serializedAccount[5:5+rdlen])
@@ -614,7 +614,7 @@ func serializeBIP0044AccountRow(row *dbBIP0044AccountRow, dbVersion uint32) []by
 
 func bip0044AccountInfo(pubKeyEnc, privKeyEnc []byte, nextExtIndex, nextIntIndex,
 	lastUsedExtIndex, lastUsedIntIndex, lastRetExtIndex, lastRetIntIndex uint32,
-	name string, acctype uint8, dbVersion uint32) *dbBIP0044AccountRow {
+	name string, acctype uint32, dbVersion uint32) *dbBIP0044AccountRow {
 
 	row := &dbBIP0044AccountRow{
 		dbAccountRow: dbAccountRow{
@@ -1224,7 +1224,7 @@ func fetchAddrAccount(ns walletdb.ReadBucket, addressID []byte) (uint32, error) 
 
 // forEachAccountAddress calls the given function with each address of
 // the given account stored in the manager, breaking early on error.
-func forEachAccountAddress(ns walletdb.ReadBucket, account uint32, fn func(rowInterface interface{}) error) (uint8, error) {
+func forEachAccountAddress(ns walletdb.ReadBucket, account uint32, fn func(rowInterface interface{}) error) (uint32, error) {
 	bucket := ns.NestedReadBucket(addrAcctIdxBucketName).
 		NestedReadBucket(uint32ToBytes(account))
 	// if index bucket is missing the account, there hasn't been any address

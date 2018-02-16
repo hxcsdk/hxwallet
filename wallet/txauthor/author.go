@@ -96,7 +96,7 @@ type ChangeSource func() ([]byte, uint16, error)
 //
 // BUGS: Fee estimation may be off when redeeming non-compressed P2PKH outputs.
 func NewUnsignedTransaction(outputs []*wire.TxOut, relayFeePerKb dcrutil.Amount,
-	fetchInputs InputSource, fetchChange ChangeSource, accType uint8) (*AuthoredTx, error) {
+	fetchInputs InputSource, fetchChange ChangeSource, accType uint32) (*AuthoredTx, error) {
 
 	targetAmount := h.SumOutputValues(outputs)
 	estimatedSize := txsizes.EstimateSerializeSize(1, outputs, true, accType)

@@ -87,9 +87,9 @@ const (
 	// private passphrases.
 	saltSize = 32
 
-	AcctypeEc    uint8 = 0
-	AcctypeBliss uint8 = 1
-	AcctypeMSS   uint8 = 2
+	AcctypeEc    uint32 = 0
+	AcctypeBliss uint32 = 1
+	AcctypeMSS   uint32 = 2
 )
 
 var (
@@ -166,7 +166,7 @@ var defaultScryptOptions = ScryptOptions{
 type accountInfo struct {
 	acctName string
 
-	acctType uint8
+	acctType uint32
 	// The account key is used to derive the branches which in turn derive
 	// the internal and external addresses.
 	// The accountKeyPriv will be nil when the address manager is locked.
@@ -182,7 +182,7 @@ type accountInfo struct {
 type AccountProperties struct {
 	AccountNumber             uint32
 	AccountName               string
-	AccountType               uint8
+	AccountType               uint32
 	LastUsedExternalIndex     uint32
 	LastUsedInternalIndex     uint32
 	LastReturnedExternalIndex uint32
@@ -1731,7 +1731,7 @@ func ValidateAccountName(name string) error {
 // ErrDuplicateAccount will be returned.  Since creating a new account requires
 // access to the cointype keys (from which extended account keys are derived),
 // it requires the manager to be unlocked.
-func (m *Manager) NewAccount(ns walletdb.ReadWriteBucket, name string, acctype uint8) (uint32, error) {
+func (m *Manager) NewAccount(ns walletdb.ReadWriteBucket, name string, acctype uint32) (uint32, error) {
 	if m.watchingOnly {
 		return 0, managerError(apperrors.ErrWatchingOnly, errWatchingOnly, nil)
 	}
@@ -2263,7 +2263,7 @@ func deriveCoinTypeKey(masterNode *hdkeychain.ExtendedKey,
 // In particular this is the hierarchical deterministic extended key path:
 //   m/44'/<coin type>'/<account>'
 func deriveAccountKey(coinTypeKey *hdkeychain.ExtendedKey,
-	account uint32, acctype uint8) (*hdkeychain.ExtendedKey, error) {
+	account uint32, acctype uint32) (*hdkeychain.ExtendedKey, error) {
 	// Enforce maximum account number.
 	if account > MaxAccountNum {
 		err := managerError(apperrors.ErrAccountNumTooHigh, errAcctTooHigh, nil)
