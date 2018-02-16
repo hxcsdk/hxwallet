@@ -185,6 +185,7 @@ message RescanResponse {
 message NextAccountRequest {
 	bytes passphrase = 1;
 	string account_name = 2;
+    uint32 account_type = 3;
 }
 message NextAccountResponse {
 	uint32 account_number = 1;
@@ -524,6 +525,7 @@ message CreateWalletResponse {}
 
 message OpenWalletRequest {
 	bytes public_passphrase = 1;
+    bytes private_passphrase = 2;
 }
 message OpenWalletResponse {}
 

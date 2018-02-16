@@ -1628,11 +1628,12 @@ func (s *loaderServer) OpenWallet(ctx context.Context, req *pb.OpenWalletRequest
 
 	// Use an insecure public passphrase when the request's is empty.
 	pubPassphrase := req.PublicPassphrase
+    privPassphrase := req.PrivatePassphrase
 	if len(pubPassphrase) == 0 {
 		pubPassphrase = []byte(wallet.InsecurePubPassphrase)
 	}
 
-	_, err := s.loader.OpenExistingWallet(pubPassphrase, nil)
+	_, err := s.loader.OpenExistingWallet(pubPassphrase, privPassphrase)
 	if err != nil {
 		return nil, translateError(err)
 	}
