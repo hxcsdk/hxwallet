@@ -7,7 +7,7 @@ import:
 - package: github.com/hybridnetwork/bitset
   version: master
 - package: github.com/hybridnetwork/hxd
-  version: dev-v0.0.1
+  version: testnet1
   subpackages:
   - blockchain
   - blockchain/stake
