@@ -57,6 +57,8 @@ Wallet clients can use one of two RPC servers:
 
 This project is currently under active development and is in a Beta state. The default branch of hxwallet is currently testnet1. Please make sure to use --testnet flag when running hxwallet and report any issues by using the integrated issue tracker. Do not yet use this software yet as a store of value!
 
+MAKE SURE TO SAVE YOUR WALLET SEED SO YOU CAN RECOVER YOUR KEYS IF THE WALLET FAILS!
+
 ## Installation and updating
 
 ### Windows/Linux/BSD/POSIX - Build from source
