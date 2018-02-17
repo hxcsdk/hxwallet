@@ -1,7 +1,6 @@
 hxwallet
 =========
 
-[![Build Status](https://travis-ci.org/hybridnetwork/hxwallet.png?branch=dev-v0.0.1)](https://travis-ci.org/hybridnetwork/hxwallet)
 [![ISC License](http://img.shields.io/badge/license-ISC-blue.svg)](http://copyfree.org)
 
 hxwallet is a daemon handling hx wallet functionality for a
@@ -54,13 +53,11 @@ Wallet clients can use one of two RPC servers:
      need notifications for changes to the wallet, this is the RPC server to
      use. The gRPC server is documented [here](./rpc/documentation/README.md).
 
+## Current State
+
+This project is currently under active development and is in a Beta state. The default branch of hxwallet is currently testnet1. Please make sure to use --testnet flag when running hxwallet and report any issues by using the integrated issue tracker. Do not yet use this software yet as a store of value!
+
 ## Installation and updating
-
-### Windows - MSIs Available
-
-Install the latest MSIs available here:
-
-https://github.com/hybridnetwork/hx-release/releases
 
 ### Windows/Linux/BSD/POSIX - Build from source
 
@@ -130,20 +127,6 @@ To build a `hxwallet` executable and place it in the current directory:
 go build
 ```
 
-## Docker
-
-All tests and linters may be run in a docker container using the script `run_tests.sh`.  This script defaults to using the current supported version of go.  You can run it with the major version of go you would like to use as the only arguement to test a previous on a previous version of go (generally hx supports the current version of go and the previous one).
-
-```
-./run_tests.sh 1.8
-```
-
-To run the tests locally without docker:
-
-```
-./run_tests.sh local
-```
-
 ## Getting Started
 
 The following instructions detail how to get started with hxwallet connecting
@@ -153,19 +136,19 @@ Windows, or any terminal emulator on *nix.
 - Run the following command to start hxd:
 
 ```
-hxd -u rpcuser -P rpcpass
+hxd -u rpcuser -P rpcpass --testnet
 ```
 
 - Run the following command to create a wallet:
 
 ```
-hxwallet -u rpcuser -P rpcpass --create
+hxwallet -u rpcuser -P rpcpass --testnet --create
 ```
 
 - Run the following command to start hxwallet:
 
 ```
-hxwallet -u rpcuser -P rpcpass
+hxwallet -u rpcuser -P rpcpass --testnet
 ```
 
 If everything appears to be working, it is recommended at this point to
