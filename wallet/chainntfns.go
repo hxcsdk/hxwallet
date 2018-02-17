@@ -29,7 +29,7 @@ func (w *Wallet) handleConsensusRPCNotifications(chainClient *chain.RPCClient) {
 		var err error
 		switch n := n.(type) {
 		case chain.ClientConnected:
-			log.Infof("The client has successfully connected to dcrd and " +
+			log.Infof("The client has successfully connected to hxd and " +
 				"is now handling websocket notifications")
 		case chain.BlockConnected:
 			notificationName = "blockconnected"
