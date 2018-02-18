@@ -398,7 +398,8 @@ func (s *walletServer) NextAccount(ctx context.Context, req *pb.NextAccountReque
 		return nil, translateError(err)
 	}
 
-	account, err := s.wallet.NextAccount(req.AccountName, req.AccountType)
+    acctType := uint8(req.AccountType)
+	account, err := s.wallet.NextAccount(req.AccountName, acctType)
 	if err != nil {
 		return nil, translateError(err)
 	}
