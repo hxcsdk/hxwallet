@@ -1285,13 +1285,32 @@ func (s *walletServer) ValidateAddress(ctx context.Context, req *pb.ValidateAddr
 
 	switch ma := addrInfo.(type) {
 	case udb.ManagedPubKeyAddress:
-		result.PubKey = ma.PubKey().Serialize()
-		pubKeyAddr, err := dcrutil.NewAddressSecpPubKey(result.PubKey,
-			s.wallet.ChainParams())
+        var pubKeyStr string
+        var pubKeyBytes []byte
+		var err error
+
+		result.IsCompressed = ma.Compressed()
+        result.PubKey = ma.PubKey().Serialize()
+		pubKeyStr = ma.ExportPubKey()
+		pubKeyBytes, err = hex.DecodeString(pubKeyStr)
 		if err != nil {
 			return nil, err
 		}
-		result.PubKeyAddr = pubKeyAddr.EncodeAddress()
+		if len(pubKeyBytes) == 897 {
+			pubKeyAddr, err := dcrutil.NewAddressBlissPubKey(pubKeyBytes,
+				s.wallet.ChainParams())
+			if err != nil {
+				return nil, err
+			}
+			result.PubKeyAddr = pubKeyAddr.String()
+		} else {
+			pubKeyAddr, err := dcrutil.NewAddressSecpPubKey(pubKeyBytes,
+				s.wallet.ChainParams())
+			if err != nil {
+				return nil, err
+			}
+			result.PubKeyAddr = pubKeyAddr.String()
+		}
 
 	case udb.ManagedScriptAddress:
 		result.IsScript = true
