@@ -197,6 +197,7 @@ message NextAddressRequest {
 	enum Kind {
 	     BIP0044_EXTERNAL = 0;
 	     BIP0044_INTERNAL = 1;
+         BLISS = 2;
 	}
 	Kind kind = 2;
 	enum GapPolicy {
@@ -210,6 +211,11 @@ message NextAddressRequest {
 message NextAddressResponse {
 	string address = 1;
 	string public_key = 2;
+    enum AccountType {
+        BIP0044 = 0;
+        BLISS = 1;
+    }
+    AccountType account_type = 3;
 }
 
 message ImportPrivateKeyRequest {

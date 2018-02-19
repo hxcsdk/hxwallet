@@ -435,38 +435,77 @@ func (s *walletServer) NextAddress(ctx context.Context, req *pb.NextAddressReque
 
 	var (
 		addr dcrutil.Address
+        pubKeyFinal string
 		err  error
+        acctType pb.NextAddressResponse_AccountType
 	)
 	switch req.Kind {
 	case pb.NextAddressRequest_BIP0044_EXTERNAL:
+        acctType = pb.NextAddressResponse_BIP0044
 		addr, err = s.wallet.NewExternalAddress(req.Account, callOpts...)
 		if err != nil {
 			return nil, translateError(err)
 		}
 	case pb.NextAddressRequest_BIP0044_INTERNAL:
+        acctType = pb.NextAddressResponse_BIP0044
 		addr, err = s.wallet.NewInternalAddress(req.Account, callOpts...)
 		if err != nil {
 			return nil, translateError(err)
 		}
+    case pb.NextAddressRequest_BLISS:
+        acctType = pb.NextAddressResponse_BLISS
+        addr, err = s.wallet.NewExternalAddress(req.Account, callOpts...)
+        if err != nil {
+            return nil, translateError(err)
+        }
 	default:
-		return nil, status.Errorf(codes.InvalidArgument, "kind=%v", req.Kind)
+        return nil, status.Errorf(codes.InvalidArgument, "kind=%v", req.Kind)
 	}
 	if err != nil {
 		return nil, translateError(err)
 	}
 
-	pubKey, err := s.wallet.PubKeyForAddress(addr)
-	if err != nil {
-		return nil, translateError(err)
-	}
-	pubKeyAddr, err := dcrutil.NewAddressSecpPubKey(pubKey.Serialize(), s.wallet.ChainParams())
-	if err != nil {
-		return nil, translateError(err)
-	}
+    switch req.Kind {
+    case pb.NextAddressRequest_BLISS:
+        var pubKeyBytes []byte
+        ainfo, err := s.wallet.AddressInfo(addr)
+        if err != nil {
+    		if apperrors.IsError(err, apperrors.ErrAddressNotFound) {
+    			return nil, translateError(err)
+    		}
+    		return nil, translateError(err)
+    	}
+
+        ma := ainfo.(udb.ManagedPubKeyAddress)
+        pubKey := ma.ExportPubKey()
+		pubKeyBytes, err = hex.DecodeString(pubKey)
+        if err != nil {
+            return nil, translateError(err)
+        }
+
+        pubKeyAddr, err := dcrutil.NewAddressBlissPubKey(pubKeyBytes, s.wallet.ChainParams())
+        if err != nil {
+            return nil, translateError(err)
+        }
+
+        pubKeyFinal = pubKeyAddr.String()
+    default:
+    	pubKey, err := s.wallet.PubKeyForAddress(addr)
+    	if err != nil {
+    		return nil, translateError(err)
+    	}
+    	pubKeyAddr, err := dcrutil.NewAddressSecpPubKey(pubKey.Serialize(), s.wallet.ChainParams())
+    	if err != nil {
+    		return nil, translateError(err)
+    	}
+
+        pubKeyFinal = pubKeyAddr.String()
+    }
 
 	return &pb.NextAddressResponse{
 		Address:   addr.EncodeAddress(),
-		PublicKey: pubKeyAddr.String(),
+		PublicKey: pubKeyFinal,
+        AccountType: acctType,
 	}, nil
 }
 
@@ -2379,7 +2418,9 @@ func marshalDecodedTxOutputs(mtx *wire.MsgTx, chainParams *chaincfg.Params) []*p
 		var scriptClass txscript.ScriptClass
 		var reqSigs int
 		var commitAmt *dcrutil.Amount
+
 		if (txType == stake.TxTypeSStx) && (stake.IsStakeSubmissionTxOut(i)) {
+
 			scriptClass = txscript.StakeSubmissionTy
 			addr, err := stake.AddrFromSStxPkScrCommitment(v.PkScript,
 				chainParams)
@@ -2401,6 +2442,7 @@ func marshalDecodedTxOutputs(mtx *wire.MsgTx, chainParams *chaincfg.Params) []*p
 			// about it anyways.
 			scriptClass, addrs, reqSigs, _ = txscript.ExtractPkScriptAddrs(
 				v.Version, v.PkScript, chainParams)
+
 			encodedAddrs := make([]string, len(addrs))
 			for j, addr := range addrs {
 				encodedAddrs[j] = addr.EncodeAddress()
