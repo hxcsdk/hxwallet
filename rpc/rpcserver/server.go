@@ -324,6 +324,7 @@ func (s *walletServer) Accounts(ctx context.Context, req *pb.AccountsRequest) (*
 		accounts[i] = &pb.AccountsResponse_Account{
 			AccountNumber:    a.AccountNumber,
 			AccountName:      a.AccountName,
+			AccountType:      uint32(a.AccountType),
 			TotalBalance:     int64(a.TotalBalance),
 			ExternalKeyCount: a.LastUsedExternalIndex + 20, // Add gap limit
 			InternalKeyCount: a.LastUsedInternalIndex + 20,
