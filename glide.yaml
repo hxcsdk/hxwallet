@@ -18,9 +18,7 @@ import:
   - txscript
   - wire
 - package: github.com/hybridnetwork/hxrpcclient
-  version: dev-v0.0.1
 - package: github.com/hybridnetwork/hxutil
-  version: dev-v0.0.1
   subpackages:
   - hdkeychain
 - package: github.com/golang/protobuf
@@ -54,5 +52,4 @@ import:
   subpackages:
   - errgroup
 - package: github.com/hybridnetwork/bliss
-  version: dev-bogrod
 - package: github.com/dchest/blake256
