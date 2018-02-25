@@ -7,7 +7,7 @@ import:
 - package: github.com/hybridnetwork/bitset
   version: master
 - package: github.com/hybridnetwork/hxd
-  version: hxify-updates
+  version: rc1.0
   subpackages:
   - blockchain
   - blockchain/stake
@@ -54,4 +54,5 @@ import:
   subpackages:
   - errgroup
 - package: github.com/hybridnetwork/bliss
+  version: dev-bogrod
 - package: github.com/dchest/blake256

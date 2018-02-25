@@ -26,11 +26,11 @@ import (
 )
 
 const (
-	defaultCAFilename          = "dcrd.cert"
-	defaultConfigFilename      = "dcrwallet.conf"
+	defaultCAFilename          = "hxd.cert"
+	defaultConfigFilename      = "hxwallet.conf"
 	defaultLogLevel            = "info"
 	defaultLogDirname          = "logs"
-	defaultLogFilename         = "dcrwallet.log"
+	defaultLogFilename         = "hxwallet.log"
 	defaultRPCMaxClients       = 10
 	defaultRPCMaxWebsockets    = 25
 	defaultEnableTicketBuyer   = false
