@@ -7,6 +7,7 @@ package wallet
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
@@ -2618,6 +2619,100 @@ func (w *Wallet) TransactionSummary(txHash *chainhash.Hash) (*TransactionSummary
 	return txSummary, err
 }
 
+// GetTicketsResult response struct for gettickets rpc request
+type GetTicketsResult struct {
+	Tickets []*TicketSummary
+}
+
+// GetTickets returns a list of TicketSummarys that are located in between the
+// given startBlock and endBlock.  TicketSummary includes TransactionSummmary
+// for the ticket and the spender (if already spent) and the ticket's current
+// status.
+func (w *Wallet) GetTickets(ctx context.Context, chainClient *dcrrpcclient.Client, startBlock, endBlock *BlockIdentifier) (*GetTicketsResult, error) {
+	var start, end int32 = 0, -1
+
+	if startBlock != nil {
+		if startBlock.hash == nil {
+			start = startBlock.height
+		} else {
+			err := walletdb.View(w.db, func(dbtx walletdb.ReadTx) error {
+				ns := dbtx.ReadBucket(wtxmgrNamespaceKey)
+				serHeader, err := w.TxStore.GetSerializedBlockHeader(ns, startBlock.hash)
+				if err != nil {
+					return err
+				}
+				var startHeader wire.BlockHeader
+				err = startHeader.Deserialize(bytes.NewReader(serHeader))
+				if err != nil {
+					return err
+				}
+				start = int32(startHeader.Height)
+				return nil
+			})
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	if endBlock != nil {
+		if endBlock.hash == nil {
+			end = endBlock.height
+		} else {
+			err := walletdb.View(w.db, func(dbtx walletdb.ReadTx) error {
+				ns := dbtx.ReadBucket(wtxmgrNamespaceKey)
+				serHeader, err := w.TxStore.GetSerializedBlockHeader(ns, endBlock.hash)
+				if err != nil {
+					return err
+				}
+				var endHeader wire.BlockHeader
+				err = endHeader.Deserialize(bytes.NewReader(serHeader))
+				if err != nil {
+					return err
+				}
+				end = int32(endHeader.Height)
+				return nil
+			})
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	var res GetTicketsResult
+	err := walletdb.View(w.db, func(dbtx walletdb.ReadTx) error {
+		txmgrNs := dbtx.ReadBucket(wtxmgrNamespaceKey)
+
+		rangeFn := func(details []udb.TxDetails) (bool, error) {
+			// TODO: probably should make RangeTransactions not reuse the
+			// details backing array memory.
+			dets := make([]udb.TxDetails, len(details))
+			copy(dets, details)
+			details = dets
+			for i := range details {
+				// XXX Here is where I would look up the ticket information from the db so I can populate spenderhash and ticket status
+				ticketInfo, err := w.TxStore.TicketDetails(txmgrNs, &details[i])
+				if err != nil {
+					return false, fmt.Errorf("%v while trying to get ticket details for txhash: %v", err, &details[i].Hash)
+				}
+				// Continue if not a ticket
+				if ticketInfo == nil {
+					continue
+				}
+				res.Tickets = append(res.Tickets, makeTicketSummary(chainClient, dbtx, w, ticketInfo))
+			}
+			select {
+			case <-ctx.Done():
+				return true, ctx.Err()
+			default:
+				return false, nil
+			}
+		}
+
+		return w.TxStore.RangeTransactions(txmgrNs, start, end, rangeFn)
+	})
+	return &res, err
+}
+
 // GetTransactionsResult is the result of the wallet's GetTransactions method.
 // See GetTransactions for more details.
 type GetTransactionsResult struct {
@@ -2639,47 +2734,51 @@ type GetTransactionsResult struct {
 func (w *Wallet) GetTransactions(startBlock, endBlock *BlockIdentifier, cancel <-chan struct{}) (*GetTransactionsResult, error) {
 	var start, end int32 = 0, -1
 
-	w.chainClientLock.Lock()
-	chainClient := w.chainClient
-	w.chainClientLock.Unlock()
-
-	// TODO: Fetching block heights by their hashes is inherently racy
-	// because not all block headers are saved but when they are for SPV the
-	// db can be queried directly without this.
-	var startResp, endResp dcrrpcclient.FutureGetBlockVerboseResult
 	if startBlock != nil {
 		if startBlock.hash == nil {
 			start = startBlock.height
 		} else {
-			if chainClient == nil {
-				return nil, errors.New("no chain server client")
+			err := walletdb.View(w.db, func(dbtx walletdb.ReadTx) error {
+				ns := dbtx.ReadBucket(wtxmgrNamespaceKey)
+				serHeader, err := w.TxStore.GetSerializedBlockHeader(ns, endBlock.hash)
+				if err != nil {
+					return err
+				}
+				var startHeader wire.BlockHeader
+				err = startHeader.Deserialize(bytes.NewReader(serHeader))
+				if err != nil {
+					return err
+				}
+				start = int32(startHeader.Height)
+				return nil
+			})
+			if err != nil {
+				return nil, err
 			}
-			startResp = chainClient.GetBlockVerboseAsync(startBlock.hash, false)
 		}
 	}
 	if endBlock != nil {
 		if endBlock.hash == nil {
 			end = endBlock.height
 		} else {
-			if chainClient == nil {
-				return nil, errors.New("no chain server client")
+			err := walletdb.View(w.db, func(dbtx walletdb.ReadTx) error {
+				ns := dbtx.ReadBucket(wtxmgrNamespaceKey)
+				serHeader, err := w.TxStore.GetSerializedBlockHeader(ns, endBlock.hash)
+				if err != nil {
+					return err
+				}
+				var endHeader wire.BlockHeader
+				err = endHeader.Deserialize(bytes.NewReader(serHeader))
+				if err != nil {
+					return err
+				}
+				end = int32(endHeader.Height)
+				return nil
+			})
+			if err != nil {
+				return nil, err
 			}
-			endResp = chainClient.GetBlockVerboseAsync(endBlock.hash, false)
 		}
-	}
-	if startResp != nil {
-		resp, err := startResp.Receive()
-		if err != nil {
-			return nil, err
-		}
-		start = int32(resp.Height)
-	}
-	if endResp != nil {
-		resp, err := endResp.Receive()
-		if err != nil {
-			return nil, err
-		}
-		end = int32(resp.Height)
 	}
 
 	var res GetTransactionsResult
