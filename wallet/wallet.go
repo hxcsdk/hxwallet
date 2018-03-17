@@ -2740,16 +2740,11 @@ func (w *Wallet) GetTransactions(startBlock, endBlock *BlockIdentifier, cancel <
 		} else {
 			err := walletdb.View(w.db, func(dbtx walletdb.ReadTx) error {
 				ns := dbtx.ReadBucket(wtxmgrNamespaceKey)
-				serHeader, err := w.TxStore.GetSerializedBlockHeader(ns, endBlock.hash)
+				meta, err := w.TxStore.GetBlockMetaForHash(ns, startBlock.hash)
 				if err != nil {
 					return err
 				}
-				var startHeader wire.BlockHeader
-				err = startHeader.Deserialize(bytes.NewReader(serHeader))
-				if err != nil {
-					return err
-				}
-				start = int32(startHeader.Height)
+				start = meta.Height
 				return nil
 			})
 			if err != nil {
@@ -2763,16 +2758,11 @@ func (w *Wallet) GetTransactions(startBlock, endBlock *BlockIdentifier, cancel <
 		} else {
 			err := walletdb.View(w.db, func(dbtx walletdb.ReadTx) error {
 				ns := dbtx.ReadBucket(wtxmgrNamespaceKey)
-				serHeader, err := w.TxStore.GetSerializedBlockHeader(ns, endBlock.hash)
+				meta, err := w.TxStore.GetBlockMetaForHash(ns, endBlock.hash)
 				if err != nil {
 					return err
 				}
-				var endHeader wire.BlockHeader
-				err = endHeader.Deserialize(bytes.NewReader(serHeader))
-				if err != nil {
-					return err
-				}
-				end = int32(endHeader.Height)
+				end = meta.Height
 				return nil
 			})
 			if err != nil {
